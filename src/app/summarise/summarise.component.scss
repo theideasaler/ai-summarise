@@ -1,0 +1,53 @@
+.summarise-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.summarise-nav {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  padding-bottom: 10px;
+
+  mat-button-toggle-group {
+    border-radius: 50px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    
+    mat-button-toggle {
+      border: none;
+      
+      &.mat-button-toggle-checked {
+        background-color: #1976d2;
+        color: white;
+        
+        .mat-button-toggle-focus-overlay {
+          display: none;
+        }
+      }
+      
+      .mat-button-toggle-label-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+      
+      .mat-pseudo-checkbox {
+        display: none !important;
+      }
+    }
+  }
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
