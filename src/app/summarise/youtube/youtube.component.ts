@@ -5,9 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { NgIf } from '@angular/common';
-
 @Component({
-  selector: 'app-multi-functional-input',
+  selector: 'app-youtube',
   imports: [
     MatInputModule,
     MatFormFieldModule,
@@ -16,10 +15,10 @@ import { NgIf } from '@angular/common';
     ReactiveFormsModule,
     NgIf,
   ],
-  templateUrl: './multi-functional-input.component.html',
-  styleUrl: './multi-functional-input.component.scss',
+  templateUrl: './youtube.component.html',
+  styleUrl: './youtube.component.scss',
 })
-export class MultiFunctionalInputComponent {
+export class YoutubeComponent {
   // YouTube URL regex pattern
   private youtubePattern =
     /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}(&.*)?$/;
