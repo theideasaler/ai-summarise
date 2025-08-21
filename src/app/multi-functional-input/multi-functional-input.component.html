@@ -1,1 +1,12 @@
-<p>multi-functional-input works!</p>
+<div class="input-container">
+  <mat-form-field appearance="outline" class="input-field">
+    <mat-label>YouTube URL</mat-label>
+    <input matInput [(ngModel)]="inputValue" placeholder="https://www.youtube.com/watch?v=jNQXAC9IVRw">
+  </mat-form-field>
+  <button mat-fab color="primary" class="submit-button" (click)="onSubmit()">
+    <mat-icon>north</mat-icon>
+  </button>
+  <button mat-fab color="primary" class="submit-button" (click)="onFineTuned()">
+    <mat-icon>tune</mat-icon>
+  </button>
+</div>

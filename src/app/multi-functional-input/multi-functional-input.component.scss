@@ -1,0 +1,38 @@
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.input-field {
+  flex: 1;
+}
+
+.submit-button {
+  min-width: 56px;
+  width: 56px;
+  height: 56px;
+  
+  mat-icon {
+    font-size: 24px;
+  }
+}
+
+// Optional: Add some responsive behavior
+@media (max-width: 768px) {
+  .input-container {
+    gap: 8px;
+  }
+  
+  .submit-button {
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    
+    mat-icon {
+      font-size: 20px;
+    }
+  }
+}
