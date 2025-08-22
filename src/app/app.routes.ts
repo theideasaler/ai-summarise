@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { SummariseComponent } from './summarise/summarise.component';
-import { YoutubeComponent } from './summarise/youtube/youtube.component';
+import { YoutubeComponent } from './youtube/youtube.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },

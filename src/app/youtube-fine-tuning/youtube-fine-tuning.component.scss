@@ -1,0 +1,132 @@
+.fine-tuning-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+  padding: 0 16px;
+
+  &.expanded {
+    max-height: 300px;
+    padding: 16px;
+  }
+}
+
+.controls-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+
+  @media (max-width: 768px) {
+    gap: 16px;
+  }
+}
+
+.range-slider-container {
+  flex: 1;
+  min-width: 0;
+
+  .range-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .range-slider {
+    width: 100%;
+  }
+}
+
+.fps-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 120px;
+
+  .fps-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .fps-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px;
+    background: #fafafa;
+
+    .fps-value {
+      font-size: 16px;
+      font-weight: 500;
+      min-width: 20px;
+      text-align: center;
+      color: #333;
+    }
+
+    button {
+      width: 32px;
+      height: 32px;
+      
+      mat-icon {
+        font-size: 18px;
+      }
+    }
+  }
+}
+
+.prompt-row {
+  width: 100%;
+
+  .prompt-field {
+    width: 100%;
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+  }
+}
+
+// Animation states
+.fine-tuning-container:not(.expanded) {
+  .controls-row,
+  .prompt-row {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.fine-tuning-container.expanded {
+  .controls-row,
+  .prompt-row {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease-in-out 0.1s, transform 0.3s ease-in-out 0.1s;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .fps-container {
+    align-self: stretch;
+    
+    .fps-input-group {
+      justify-content: center;
+    }
+  }
+
+  .fine-tuning-container.expanded {
+    max-height: 400px;
+  }
+}

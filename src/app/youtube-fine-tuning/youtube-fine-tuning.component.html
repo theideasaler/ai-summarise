@@ -1,0 +1,61 @@
+<div class="fine-tuning-container" [class.expanded]="isExpanded()">
+  <!-- Row 1: Range Controls -->
+  <div class="controls-row">
+    <!-- Range Slider -->
+    <div class="range-slider-container">
+      <label class="range-label">Time Range: {{ startTimeFormatted() }} - {{ endTimeFormatted() }}</label>
+      <mat-slider 
+        class="range-slider"
+        [min]="0" 
+        [max]="videoDuration()" 
+        [step]="1"
+        [discrete]="true">
+        <input 
+          matSliderStartThumb 
+          [value]="startSeconds()" 
+          (valueChange)="onRangeChange($event)">
+        <input 
+          matSliderEndThumb 
+          [value]="endSeconds()" 
+          (valueChange)="onEndRangeChange($event)">
+      </mat-slider>
+    </div>
+
+    <!-- FPS Selector -->
+    <div class="fps-container">
+      <label class="fps-label">Frames per second</label>
+      <div class="fps-input-group">
+        <button 
+          mat-icon-button 
+          (click)="onFpsChange(-1)" 
+          [disabled]="fps() <= 1"
+          aria-label="Decrease FPS">
+          <mat-icon>keyboard_arrow_left</mat-icon>
+        </button>
+        <span class="fps-value">{{ fps() }}</span>
+        <button 
+          mat-icon-button 
+          (click)="onFpsChange(1)" 
+          [disabled]="fps() >= 5"
+          aria-label="Increase FPS">
+          <mat-icon>keyboard_arrow_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Custom Prompt -->
+  <div class="prompt-row">
+    <mat-form-field appearance="outline" class="prompt-field">
+      <mat-label>Custom Summarization Prompt</mat-label>
+      <textarea 
+        matInput 
+        rows="3"
+        placeholder="Specify how you'd like the video summarized (e.g., 'Create a brief summary highlighting the main arguments')"
+        [value]="customPrompt()"
+        (input)="onPromptChange($event)"
+        aria-label="Custom video summarization prompt">
+      </textarea>
+    </mat-form-field>
+  </div>
+</div>

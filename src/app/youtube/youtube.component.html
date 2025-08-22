@@ -1,0 +1,37 @@
+<div class="youtube-container">
+  <h2>YouTube Summarization</h2>
+  <p>Provide a YouTube video link to generate a summary.</p>
+  <div class="input-container">
+    <mat-form-field appearance="outline" class="input-field">
+      <mat-label>YouTube URL</mat-label>
+      <input matInput [formControl]="inputControl" placeholder="https://www.youtube.com/watch?v=jNQXAC9IVRw">
+      <mat-error *ngIf="inputControl.invalid && inputControl.touched">
+        {{ errorMessage() }}
+      </mat-error>
+    </mat-form-field>
+    <button mat-fab color="primary" class="submit-button" (click)="onSubmit()"
+      [disabled]="inputControl.invalid || !videoDuration() || videoDuration()! <= 0">
+      <mat-icon>north</mat-icon>
+    </button>
+    <button mat-fab color="primary" class="submit-button" (click)="toggleFinetuning()"
+      [disabled]="inputControl.invalid || !videoDuration() || videoDuration()! <= 0"
+      [class.active]="isFinetuningExpanded()">
+      <mat-icon>tune</mat-icon>
+    </button>
+  </div>
+
+  <!-- Fine-tuning Component -->
+  <app-youtube-fine-tuning *ngIf="!inputControl.invalid && videoDuration() && videoDuration()! > 0"
+    [videoDuration]="videoDuration" [isExpanded]="isFinetuningExpanded" (configChange)="onFinetuningConfigChange($event)">
+  </app-youtube-fine-tuning>
+
+  <app-youtube-video-preview *ngIf="!inputControl.invalid" [url]="inputControl.value || ''"
+    (duration)="onDuration($event)" (error)="onVideoError($event)">
+  </app-youtube-video-preview>
+
+  <!-- Display custom error message for restricted videos -->
+  <div *ngIf="errorMessage150()" class="error-message">
+    <mat-icon>error</mat-icon>
+    <span>{{ errorMessage150() }}</span>
+  </div>
+</div>
