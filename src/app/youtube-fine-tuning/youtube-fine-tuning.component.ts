@@ -1,4 +1,15 @@
-import { Component, Output, EventEmitter, signal, computed, OnInit, OnDestroy, Input, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+  OnInit,
+  OnDestroy,
+  Input,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -120,17 +131,25 @@ export class YoutubeFinetuningComponent
   }
 
   private formatTime(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
-      .toString()
-      .padStart(2, '0')}`;
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes
+        .toString()
+        .padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
+        .toString()
+        .padStart(2, '0')}`;
+    }
   }
 
   // Function used by MatSlider [displayWith] - arrow function to preserve 'this' context
   formatLabel = (value: number | null): string => {
-    return this.formatTime((value ?? 0));
-  }
+    return this.formatTime(value ?? 0);
+  };
 
   private emitConfigChange() {
     this.configChange.emit(this.config());
