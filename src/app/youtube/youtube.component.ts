@@ -15,6 +15,7 @@ import { NgIf } from '@angular/common';
 import { YoutubeVideoPreviewComponent } from '../youtube-video-preview/youtube-video-preview.component';
 import { YoutubeFinetuningComponent } from '../youtube-fine-tuning/youtube-fine-tuning.component';
 import { VideoFinetuningConfig } from '../shared/types';
+import { distinctUntilChanged } from 'rxjs';
 @Component({
   selector: 'app-youtube',
   imports: [
@@ -50,25 +51,96 @@ export class YoutubeComponent implements OnInit {
     customPrompt: '',
   });
 
+  // Signal to track input control state for reactive computed properties
+  inputState = signal({ valid: false, value: '' });
+
+  // Persistent fine-tuning state in memory
+  private persistentFinetuningConfig: VideoFinetuningConfig | null = null;
+  private persistentIsExpanded: boolean = false;
+  private persistentVideoDuration: number | null = null; // Track the duration when config was saved
+
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     // Subscribe to input changes for proper signal updates
-    this.inputControl.valueChanges.subscribe(() => {
-      this.videoDuration.set(null);
-      this.errorMessage150.set(null);
-      this.finetuningConfig.set(null);
-      this.isFinetuningExpanded.set(false);
-      // Manually trigger change detection to update button states immediately
-      this.cdr.detectChanges();
+    this.inputControl.valueChanges
+      .pipe(distinctUntilChanged())
+      .subscribe(() => {
+        // Update input state signal for reactive computed properties
+        this.inputState.set({
+          valid: this.inputControl.valid,
+          value: this.inputControl.value || '',
+        });
+
+        this.videoDuration.set(null);
+        this.errorMessage150.set(null);
+        // Don't reset fine-tuning state here - preserve it for valid URLs
+        // Only reset if input becomes invalid
+        if (this.inputControl.invalid) {
+          this.finetuningConfig.set(null);
+          this.isFinetuningExpanded.set(false);
+          this.persistentFinetuningConfig = null;
+          this.persistentIsExpanded = false;
+          this.persistentVideoDuration = null;
+        }
+        // Manually trigger change detection to update button states immediately
+        this.cdr.detectChanges();
+      });
+
+    // Initialize input state
+    this.inputState.set({
+      valid: this.inputControl.valid,
+      value: this.inputControl.value || '',
     });
   }
 
   onDuration(duration: number) {
     console.log('Received duration:', duration, 'seconds');
+
+    // Restore persistent fine-tuning state if available
+    if (this.persistentFinetuningConfig && this.persistentVideoDuration) {
+      const config = this.persistentFinetuningConfig;
+      const oldDuration = this.persistentVideoDuration;
+      
+      // Smart restoration logic - don't persist default values
+      let startSeconds = 0;
+      let endSeconds = duration;
+      
+      // Only restore startSeconds if it wasn't at default (0) in the previous video
+      if (config.startSeconds > 0) {
+        startSeconds = Math.min(config.startSeconds, duration);
+      }
+      
+      // Only restore endSeconds if it wasn't at default (full duration) in the previous video
+      if (config.endSeconds < oldDuration) {
+        endSeconds = Math.min(config.endSeconds, duration);
+      }
+      
+      // Ensure start is not greater than end after adjustment
+      if (startSeconds >= endSeconds) {
+        startSeconds = 0;
+        endSeconds = duration;
+      }
+      
+      const adjustedConfig: VideoFinetuningConfig = {
+        ...config,
+        startSeconds,
+        endSeconds,
+      };
+
+      this.finetuningConfig.set(adjustedConfig);
+      this.isFinetuningExpanded.set(this.persistentIsExpanded);
+    } else {
+      // First time or no persistent config - set default
+      this.finetuningConfig.set({
+        startSeconds: 0,
+        endSeconds: duration,
+        fps: 1,
+        customPrompt: '',
+      });
+    }
+
     this.videoDuration.set(duration);
-    // Clear error message when video loads successfully
-    this.errorMessage150.set(null);
   }
 
   onVideoError(errorCode: number) {
@@ -80,6 +152,9 @@ export class YoutubeComponent implements OnInit {
     } else {
       this.errorMessage150.set(null);
     }
+
+    // Collapse fine-tuning when video has errors
+    this.isFinetuningExpanded.set(false);
   }
 
   onSubmit() {
@@ -104,11 +179,23 @@ export class YoutubeComponent implements OnInit {
   }
 
   toggleFinetuning() {
-    this.isFinetuningExpanded.set(!this.isFinetuningExpanded());
+    const newExpandedState = !this.isFinetuningExpanded();
+    this.isFinetuningExpanded.set(newExpandedState);
+    // Save expanded state to persistent memory
+    this.persistentIsExpanded = newExpandedState;
+    // If collapsed, reset config
+    if (!newExpandedState) {
+      this.finetuningConfig.set(null);
+      this.persistentFinetuningConfig = null;
+      this.persistentVideoDuration = null;
+    }
   }
 
   onFinetuningConfigChange(config: VideoFinetuningConfig) {
     this.finetuningConfig.set(config);
+    // Save config to persistent memory
+    this.persistentFinetuningConfig = { ...config };
+    this.persistentVideoDuration = this.videoDuration();
     console.log('Fine-tuning config updated:', config);
   }
 
@@ -120,5 +207,23 @@ export class YoutubeComponent implements OnInit {
       return 'Please enter a valid YouTube URL';
     }
     return '';
+  });
+
+  isValidUrl = computed(() => {
+    const inputState = this.inputState();
+    const isValid =
+      inputState.valid &&
+      inputState.value &&
+      inputState.value.trim() !== '' &&
+      !!this.videoDuration() &&
+      !this.errorMessage150();
+    console.log('isValidUrl check:', {
+      controlValid: inputState.valid,
+      hasValue: !!inputState.value,
+      valueNotEmpty: inputState.value ? inputState.value.trim() !== '' : false,
+      noError150: !this.errorMessage150(),
+      finalResult: isValid,
+    });
+    return isValid;
   });
 }

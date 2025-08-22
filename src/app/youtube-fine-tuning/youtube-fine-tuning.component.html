@@ -1,4 +1,4 @@
-<div class="fine-tuning-container" [class.expanded]="isExpanded()">
+<div class="fine-tuning-container no-form-field-bottom-space" [class.expanded]="isExpanded">
   <!-- Row 1: Range Controls -->
   <div class="controls-row">
     <!-- Range Slider -->
@@ -7,9 +7,10 @@
       <mat-slider 
         class="range-slider"
         [min]="0" 
-        [max]="videoDuration()" 
+        [max]="videoDuration" 
         [step]="1"
-        [discrete]="true">
+        [discrete]="true"
+        [displayWith]="formatLabel">
         <input 
           matSliderStartThumb 
           [value]="startSeconds()" 
@@ -23,7 +24,16 @@
 
     <!-- FPS Selector -->
     <div class="fps-container">
-      <label class="fps-label">Frames per second</label>
+      <div class="fps-label-container">
+        <label class="fps-label">Frames per second</label>
+        <mat-icon 
+          class="info-icon" 
+          matTooltip="This setting determines how many snapshots are taken from each second of your video. A value of 1 takes one image per second, while 5 takes five images per second. If you want to capture more details in rapidly changing visuals, consider setting a higher FPS value. Keep in mind that higher FPS settings will use more processing tokens and may increase costs."
+          matTooltipPosition="above"
+          matTooltipClass="fps-tooltip">
+          info_outline
+        </mat-icon>
+      </div>
       <div class="fps-input-group">
         <button 
           mat-icon-button 

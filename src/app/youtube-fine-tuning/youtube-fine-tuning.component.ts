@@ -1,10 +1,11 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy, effect, Signal } from '@angular/core';
+import { Component, Output, EventEmitter, signal, computed, OnInit, OnDestroy, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject, takeUntil } from 'rxjs';
 import { VideoFinetuningConfig } from '../shared/types';
@@ -19,30 +20,24 @@ import { VideoFinetuningConfig } from '../shared/types';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     FormsModule,
   ],
   templateUrl: './youtube-fine-tuning.component.html',
   styleUrl: './youtube-fine-tuning.component.scss',
 })
-export class YoutubeFinetuningComponent implements OnInit, OnDestroy {
-  @Input() videoDuration!: Signal<number | null>;
-  @Input() isExpanded!: Signal<boolean>;
+export class YoutubeFinetuningComponent
+  implements OnInit, OnDestroy, OnChanges
+{
+  // Classic @Input()s with values
+  @Input() videoDuration: number | null = null;
+  @Input() isExpanded: boolean = false;
+  @Input() initialConfig: VideoFinetuningConfig | null = null;
+
   @Output() configChange = new EventEmitter<VideoFinetuningConfig>();
 
   private destroy$ = new Subject<void>();
   private promptSubject = new Subject<string>();
-
-  constructor() {
-    // Watch for video duration changes to update default values only
-    effect(() => {
-      const duration = this.videoDuration();
-      if (duration && duration > 0) {
-        this.startSeconds.set(0);
-        this.endSeconds.set(duration);
-        // No emission here - only emit when user interacts
-      }
-    });
-  }
 
   // Internal signals
   startSeconds = signal<number>(0);
@@ -60,6 +55,33 @@ export class YoutubeFinetuningComponent implements OnInit, OnDestroy {
 
   startTimeFormatted = computed(() => this.formatTime(this.startSeconds()));
   endTimeFormatted = computed(() => this.formatTime(this.endSeconds()));
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Respond to changes from parent for duration or initial config
+    const duration = this.videoDuration ?? 0;
+
+    if (duration > 0) {
+      if (this.initialConfig) {
+        const cfg = { ...this.initialConfig };
+        // Clamp to duration
+        cfg.startSeconds = Math.max(0, Math.min(cfg.startSeconds, duration));
+        cfg.endSeconds = Math.max(
+          cfg.startSeconds,
+          Math.min(cfg.endSeconds, duration)
+        );
+        this.startSeconds.set(cfg.startSeconds);
+        this.endSeconds.set(cfg.endSeconds);
+        this.fps.set(cfg.fps);
+        this.customPrompt.set(cfg.customPrompt);
+      } else {
+        // Defaults
+        this.startSeconds.set(0);
+        this.endSeconds.set(duration);
+        this.fps.set(1);
+        this.customPrompt.set('');
+      }
+    }
+  }
 
   ngOnInit() {
     // Set up debounced prompt changes
@@ -103,6 +125,11 @@ export class YoutubeFinetuningComponent implements OnInit, OnDestroy {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
       .toString()
       .padStart(2, '0')}`;
+  }
+
+  // Function used by MatSlider [displayWith] - arrow function to preserve 'this' context
+  formatLabel = (value: number | null): string => {
+    return this.formatTime((value ?? 0));
   }
 
   private emitConfigChange() {
