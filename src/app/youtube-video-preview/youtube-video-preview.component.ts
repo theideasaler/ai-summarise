@@ -13,6 +13,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { YouTubePlayerModule } from '@angular/youtube-player';
+import { LoggerService } from '../shared/logger.service';
 
 @Component({
   selector: 'app-youtube-video-preview',
@@ -32,6 +33,9 @@ export class YoutubeVideoPreviewComponent
   videoId: string | null = null;
   player: any = null;
   private apiReady = false;
+  private playerDisposed = false;
+
+  constructor(private logger: LoggerService) {}
 
   ngOnInit() {
     this.loadYouTubeAPI();
@@ -42,7 +46,7 @@ export class YoutubeVideoPreviewComponent
       const newVideoId = this.extractVideoId(changes['url'].currentValue);
       if (newVideoId !== this.videoId) {
         this.videoId = newVideoId;
-        console.log('Video ID extracted:', this.videoId);
+        this.logger.log('Video ID extracted:', this.videoId);
         if (this.apiReady && this.videoId && this.playerElement) {
           this.initializePlayerWithElement();
         }
@@ -57,20 +61,18 @@ export class YoutubeVideoPreviewComponent
   }
 
   ngOnDestroy() {
-    if (this.player) {
-      this.player.destroy();
-    }
+    this.disposePlayer();
   }
 
   private loadYouTubeAPI() {
     if (window.YT && window.YT.Player) {
       this.apiReady = true;
-      console.log('YouTube API already loaded');
+      this.logger.log('YouTube API already loaded');
       return;
     }
 
     if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-      console.log('Loading YouTube API script');
+      this.logger.log('Loading YouTube API script');
       const script = document.createElement('script');
       script.src = 'https://www.youtube.com/iframe_api';
       script.async = true;
@@ -79,7 +81,7 @@ export class YoutubeVideoPreviewComponent
 
     const originalCallback = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
-      console.log('YouTube API ready');
+      this.logger.log('YouTube API ready');
       this.apiReady = true;
       if (this.videoId && this.playerElement) {
         this.initializePlayerWithElement();
@@ -112,7 +114,7 @@ export class YoutubeVideoPreviewComponent
 
   private initializePlayerWithElement() {
     if (!this.videoId || !this.apiReady || !this.playerElement) {
-      console.log('Cannot initialize player:', {
+      this.logger.log('Cannot initialize player:', {
         videoId: this.videoId,
         apiReady: this.apiReady,
         playerElement: !!this.playerElement,
@@ -120,11 +122,10 @@ export class YoutubeVideoPreviewComponent
       return;
     }
 
-    if (this.player) {
-      this.player.destroy();
-    }
+    // Reset disposal flag for new player
+    this.playerDisposed = false;
 
-    console.log('Initializing YouTube player with video ID:', this.videoId);
+    this.logger.log('Initializing YouTube player with video ID:', this.videoId);
 
     try {
       this.player = new window.YT.Player(this.playerElement.nativeElement, {
@@ -150,11 +151,30 @@ export class YoutubeVideoPreviewComponent
 
   private onPlayerReady(event: any) {
     const duration = event.target.getDuration();
-    console.log('Video duration:', duration);
+    this.logger.log('Video duration:', duration);
     this.duration.emit(duration);
+
+    // Dispose player after emitting duration to reduce memory usage
+    if (duration) this.disposePlayer();
   }
 
   private onPlayerError(event: any) {
     this.error.emit(event.data);
+
+    // Dispose player after emitting error to reduce memory usage
+    this.disposePlayer();
+  }
+
+  private disposePlayer() {
+    if (this.player && !this.playerDisposed) {
+      this.logger.log('Disposing YouTube player to free memory');
+      try {
+        this.player.destroy();
+      } catch (error) {
+        console.warn('Error disposing player:', error);
+      }
+      this.player = null;
+      this.playerDisposed = true;
+    }
   }
 }

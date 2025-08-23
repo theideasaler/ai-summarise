@@ -20,7 +20,8 @@
         <mat-form-field appearance="outline" class="input-field">
           <mat-label>YouTube URL</mat-label>
           <input matInput [formControl]="inputControl" placeholder="https://www.youtube.com/watch?v=jNQXAC9IVRw">
-          <mat-icon matSuffix *ngIf="isValidUrl()" class="success-icon">check_circle</mat-icon>
+          <mat-icon matSuffix *ngIf="isLoadingVideo() && inputControl.valid" class="loading-icon">hourglass_empty</mat-icon>
+          <mat-icon matSuffix *ngIf="isValidUrl() && !isLoadingVideo()" class="success-icon">check_circle</mat-icon>
           <mat-error *ngIf="inputControl.invalid && inputControl.touched">
             {{ errorMessage() }}
           </mat-error>

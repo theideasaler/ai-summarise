@@ -60,7 +60,10 @@ app.get('**', (req, res, next) => {
 if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 4000;
   app.listen(port, () => {
+    // Only log in development mode
+  if (process.env['NODE_ENV'] !== 'production') {
     console.log(`Node Express server listening on http://localhost:${port}`);
+  }
   });
 }
 

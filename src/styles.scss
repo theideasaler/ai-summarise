@@ -35,3 +35,13 @@ iframe.youtube-player {
     display: none;
   }
 }
+
+/* Prevent iOS Safari zoom on input focus */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* Ensure Material Design inputs also have proper font size */
+.mat-mdc-input-element {
+  font-size: 16px !important;
+}

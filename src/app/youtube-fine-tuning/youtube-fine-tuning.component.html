@@ -28,9 +28,12 @@
         <label class="fps-label">Frames per second</label>
         <mat-icon 
           class="info-icon" 
+          #tooltip="matTooltip"
           matTooltip="This setting determines how many snapshots are taken from each second of your video. A value of 1 takes one image per second, while 5 takes five images per second. If you want to capture more details in rapidly changing visuals, consider setting a higher FPS value. Keep in mind that higher FPS settings will use more processing tokens and may increase costs."
           matTooltipPosition="above"
-          matTooltipClass="fps-tooltip">
+          matTooltipClass="fps-tooltip"
+          (click)="tooltip.toggle()"
+          >
           info_outline
         </mat-icon>
       </div>
@@ -57,14 +60,14 @@
   <!-- Row 2: Custom Prompt -->
   <div class="prompt-row">
     <mat-form-field appearance="outline" class="prompt-field">
-      <mat-label>Custom Summarization Prompt</mat-label>
+      <mat-label>Custom Summarisation Prompt</mat-label>
       <textarea 
         matInput 
         rows="3"
-        placeholder="Specify how you'd like the video summarized (e.g., 'Create a brief summary highlighting the main arguments')"
+        placeholder="Specify how you'd like the video summarised (e.g., 'Create a brief summary highlighting the main arguments')"
         [value]="customPrompt()"
         (input)="onPromptChange($event)"
-        aria-label="Custom video summarization prompt">
+        aria-label="Custom video summarisation prompt">
       </textarea>
     </mat-form-field>
   </div>

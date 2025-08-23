@@ -6,6 +6,7 @@ import {
   effect,
   ChangeDetectorRef,
 } from '@angular/core';
+import { LoggerService } from '../shared/logger.service';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,7 +35,7 @@ import { distinctUntilChanged } from 'rxjs';
 export class YoutubeComponent implements OnInit {
   // YouTube URL regex pattern
   private youtubePattern =
-    /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}(&.*)?$/;
+    /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}([&?].*)?$/;
 
   inputControl = new FormControl('', [
     Validators.required,
@@ -44,6 +45,7 @@ export class YoutubeComponent implements OnInit {
   videoDuration = signal<number | null>(null);
   errorMessage150 = signal<string | null>(null);
   isFinetuningExpanded = signal<boolean>(false);
+  isLoadingVideo = signal<boolean>(false);
   finetuningConfig = signal<VideoFinetuningConfig | null>({
     startSeconds: 0,
     endSeconds: 0,
@@ -59,7 +61,7 @@ export class YoutubeComponent implements OnInit {
   private persistentIsExpanded: boolean = false;
   private persistentVideoDuration: number | null = null; // Track the duration when config was saved
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private logger: LoggerService) {}
 
   ngOnInit() {
     // Subscribe to input changes for proper signal updates
@@ -74,6 +76,18 @@ export class YoutubeComponent implements OnInit {
 
         this.videoDuration.set(null);
         this.errorMessage150.set(null);
+
+        // Set loading state for valid URLs only
+        if (
+          this.inputControl.valid &&
+          this.inputControl.value &&
+          this.inputControl.value.trim() !== ''
+        ) {
+          this.isLoadingVideo.set(true);
+        } else {
+          this.isLoadingVideo.set(false);
+        }
+
         // Don't reset fine-tuning state here - preserve it for valid URLs
         // Only reset if input becomes invalid
         if (this.inputControl.invalid) {
@@ -82,6 +96,7 @@ export class YoutubeComponent implements OnInit {
           this.persistentFinetuningConfig = null;
           this.persistentIsExpanded = false;
           this.persistentVideoDuration = null;
+          this.isLoadingVideo.set(false);
         }
         // Manually trigger change detection to update button states immediately
         this.cdr.detectChanges();
@@ -95,33 +110,33 @@ export class YoutubeComponent implements OnInit {
   }
 
   onDuration(duration: number) {
-    console.log('Received duration:', duration, 'seconds');
+    this.logger.log('Received duration:', duration, 'seconds');
 
     // Restore persistent fine-tuning state if available
     if (this.persistentFinetuningConfig && this.persistentVideoDuration) {
       const config = this.persistentFinetuningConfig;
       const oldDuration = this.persistentVideoDuration;
-      
+
       // Smart restoration logic - don't persist default values
       let startSeconds = 0;
       let endSeconds = duration;
-      
+
       // Only restore startSeconds if it wasn't at default (0) in the previous video
       if (config.startSeconds > 0) {
         startSeconds = Math.min(config.startSeconds, duration);
       }
-      
+
       // Only restore endSeconds if it wasn't at default (full duration) in the previous video
       if (config.endSeconds < oldDuration) {
         endSeconds = Math.min(config.endSeconds, duration);
       }
-      
+
       // Ensure start is not greater than end after adjustment
       if (startSeconds >= endSeconds) {
         startSeconds = 0;
         endSeconds = duration;
       }
-      
+
       const adjustedConfig: VideoFinetuningConfig = {
         ...config,
         startSeconds,
@@ -141,40 +156,52 @@ export class YoutubeComponent implements OnInit {
     }
 
     this.videoDuration.set(duration);
+    this.isLoadingVideo.set(false);
   }
 
   onVideoError(errorCode: number) {
-    console.log('YouTube player error:', errorCode);
-    if (errorCode === 150) {
-      this.errorMessage150.set(
-        'YouTube Video access has been restricted on other websites'
-      );
-    } else {
-      this.errorMessage150.set(null);
+    this.logger.log('=== YouTube component onVideoError called ===');
+    this.logger.log('YouTube player error:', errorCode);
+
+    let errorMessage: string;
+
+    switch (errorCode) {
+      case 2:
+        errorMessage = 'Invalid video ID or video not found';
+        break;
+      case 5:
+        errorMessage = 'HTML5 player error occurred';
+        break;
+      case 100:
+        errorMessage = 'Video not found or has been removed';
+        break;
+      case 101:
+        errorMessage = 'Video owner has restricted playback on other websites';
+        break;
+      case 150:
+        errorMessage =
+          'YouTube video access has been restricted on other websites';
+        break;
+      default:
+        errorMessage = `YouTube player error occurred (Error code: ${errorCode})`;
+        break;
     }
+
+    this.logger.log('Setting error message:', errorMessage);
+    this.errorMessage150.set(errorMessage);
 
     // Collapse fine-tuning when video has errors
     this.isFinetuningExpanded.set(false);
+    this.isLoadingVideo.set(false);
   }
 
   onSubmit() {
     if (this.inputControl.valid) {
-      console.log('Input value:', this.inputControl.value);
-      console.log('Video duration:', this.videoDuration(), 'seconds');
+      this.logger.log('Input value:', this.inputControl.value);
+      this.logger.log('Video duration:', this.videoDuration(), 'seconds');
       // Add your submit logic here
     } else {
-      console.log('Invalid YouTube URL');
-    }
-  }
-
-  onFineTuned() {
-    if (this.inputControl.valid) {
-      console.log('Input value:', this.inputControl.value);
-      console.log('Video duration:', this.videoDuration(), 'seconds');
-      console.log('Fine-tuning config:', this.finetuningConfig());
-      // Add your fine-tuned logic here
-    } else {
-      console.log('Invalid YouTube URL');
+      this.logger.log('Invalid YouTube URL');
     }
   }
 
@@ -196,7 +223,7 @@ export class YoutubeComponent implements OnInit {
     // Save config to persistent memory
     this.persistentFinetuningConfig = { ...config };
     this.persistentVideoDuration = this.videoDuration();
-    console.log('Fine-tuning config updated:', config);
+    this.logger.log('Fine-tuning config updated:', config);
   }
 
   errorMessage = computed(() => {
@@ -217,7 +244,7 @@ export class YoutubeComponent implements OnInit {
       inputState.value.trim() !== '' &&
       !!this.videoDuration() &&
       !this.errorMessage150();
-    console.log('isValidUrl check:', {
+    this.logger.log('isValidUrl check:', {
       controlValid: inputState.valid,
       hasValue: !!inputState.value,
       valueNotEmpty: inputState.value ? inputState.value.trim() !== '' : false,
