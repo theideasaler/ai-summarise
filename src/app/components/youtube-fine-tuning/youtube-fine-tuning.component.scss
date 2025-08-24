@@ -1,0 +1,303 @@
+.fine-tuning-container {
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  &.expanded {
+    background: transparent;
+    padding: 1.5rem;
+  }
+}
+
+.controls-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: start;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.range-slider-container {
+  min-width: 0;
+
+  .range-label {
+    display: block;
+    font-size: 1.6rem; /* 16px */
+    color: #374151;
+    margin-bottom: 12px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+
+    @media (max-width: 768px) {
+      text-align: center;
+    }
+  }
+
+  .range-slider {
+    width: 100%;
+
+    @media (max-width: 768px) {
+      width: calc(100% - 16px);
+    }
+
+    ::ng-deep .mat-mdc-slider {
+      .mdc-slider__track {
+        height: 6px;
+      }
+
+      .mdc-slider__track--active_fill {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .mdc-slider__thumb {
+        width: 20px;
+        height: 20px;
+
+        .mdc-slider__thumb-knob {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+      }
+    }
+
+    // Force value indicators to always be visible with centered positioning
+    ::ng-deep .mdc-slider__value-indicator-container {
+      opacity: 1 !important;
+      transform: scale(1) translateX(-50%) !important;
+      pointer-events: none;
+    }
+
+    ::ng-deep .mdc-slider__value-indicator {
+      opacity: 1 !important;
+      background: #1f2937;
+      color: white;
+      font-weight: 500;
+      font-size: 1.2rem; /* 12px - acceptable for small indicators */
+    }
+
+    // Ensure proper spacing for value indicators
+    ::ng-deep .mdc-slider {
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+  }
+}
+
+.fps-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 140px;
+
+  .fps-label-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+
+    .fps-label {
+      font-size: 1.6rem; /* 16px */
+      color: #374151;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      text-align: center;
+      margin: 0;
+    }
+
+    .info-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #64748b;
+      cursor: help;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: #475569;
+      }
+    }
+  }
+
+  .fps-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid #e2e8f0;
+
+    button {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &:hover:not([disabled]) {
+        background: #f1f5f9;
+        transform: translateY(-1px);
+        border-radius: 50%;
+      }
+
+      &[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        color: #64748b;
+      }
+    }
+
+    .fps-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      min-width: 20px;
+      text-align: center;
+    }
+  }
+}
+
+.prompt-row {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  .prompt-field {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    ::ng-deep {
+      .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
+
+      .mat-mdc-text-field-wrapper {
+        background: #f8fafc;
+        border-radius: 8px;
+
+        .mat-mdc-form-field-outline {
+          color: #e2e8f0;
+        }
+
+        &:hover .mat-mdc-form-field-outline {
+          color: #cbd5e1;
+        }
+
+        &.mdc-text-field--focused .mat-mdc-form-field-outline {
+          color: #667eea;
+        }
+      }
+
+      .mat-mdc-form-field-label {
+        color: #64748b;
+        font-weight: 500;
+      }
+
+      .mat-mdc-input-element {
+        color: #1e293b;
+        font-size: 1.6rem; /* 16px */
+        line-height: 1.5;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        resize: vertical;
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+}
+
+.prompt-row {
+  width: 100%;
+
+  .prompt-field {
+    width: 100%;
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+      max-height: none;
+      height: 72px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+  }
+}
+
+// Custom tooltip styling
+::ng-deep .fps-tooltip {
+  background: #1f2937 !important;
+  color: white !important;
+  font-size: 1.2rem !important; /* 12px - acceptable for tooltips */
+  line-height: 1.4 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  max-width: 280px !important;
+  text-align: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+
+  .mat-mdc-tooltip-surface {
+    background: transparent !important;
+  }
+
+  .mdc-tooltip__surface {
+    background: transparent !important;
+  }
+}
+
+// Animation states
+.fine-tuning-container:not(.expanded) {
+  .controls-row,
+  .prompt-row {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.fine-tuning-container.expanded {
+  .controls-row,
+  .prompt-row {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease-in-out 0.1s, transform 0.3s ease-in-out 0.1s;
+  }
+}

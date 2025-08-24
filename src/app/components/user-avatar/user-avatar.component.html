@@ -1,0 +1,16 @@
+<div class="user-avatar-container" [ngClass]="getSizeClass()">
+  <img 
+    *ngIf="user?.photoURL && !imageLoadError" 
+    [src]="user?.photoURL" 
+    [alt]="user?.displayName || 'User'"
+    [class]="'avatar-img avatar-img-' + getUniqueId()" 
+    [class.hidden]="imageLoadError" 
+    (error)="onImageError()" 
+    (load)="onImageLoad()">
+  
+  <div 
+    *ngIf="(!user?.photoURL || imageLoadError) && showFallback" 
+    class="avatar-placeholder">
+    {{ getUserInitials() }}
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<div class="side-drawer" [class.open]="shouldShowOpenClass$ | async" [class.collapsed]="shouldShowCollapsedClass$ | async">
+  <!-- Logo Section -->
+  <div class="drawer-header">
+    <div class="logo-section" routerLink="/">
+      <span class="logo-text">AI Summarise</span>
+    </div>
+    <div class="header-controls">
+      <button class="collapse-btn" (click)="toggleDesktopCollapse()"
+        title="{{ (isDesktopDrawerCollapsed$ | async) ? 'Expand Sidebar' : 'Collapse Sidebar' }}">
+        <mat-icon>{{ (isDesktopDrawerCollapsed$ | async) ? 'keyboard_arrow_right' : 'keyboard_arrow_left' }}</mat-icon>
+      </button>
+      <button class="close-btn" (click)="closeMobileDrawer()" title="Close Menu">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Navigation Section -->
+  <div class="drawer-content">
+    <div class="nav-section">
+      <h3 class="section-title">SUMMARIZE CONTENT</h3>
+      <nav class="nav-list">
+        <a *ngFor="let item of navigationItems" [routerLink]="item.route" class="nav-item"
+          [class.active]="isActive(item.route)" (click)="navigateTo(item.route)"
+          [title]="(isDesktopDrawerCollapsed$ | async) ? item.label + ' - ' + item.description : ''">
+          <div class="nav-item-content">
+            <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+            <div class="nav-text" *ngIf="shouldShowText$ | async">
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="nav-description">{{ item.description }}</span>
+            </div>
+          </div>
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- User Section -->
+  <div class="drawer-footer">
+    <div *ngIf="currentUser$ | async as user" class="user-section">
+      <div class="user-info">
+        <app-user-avatar [user]="user" size="medium"></app-user-avatar>
+        <div class="user-details" *ngIf="shouldShowText$ | async">
+          <span class="user-name">{{ user.displayName || user.email }}</span>
+          <span class="user-plan">Free Plan</span>
+        </div>
+      </div>
+      <button class="sign-out-btn" (click)="signOut()" [title]="(isDesktopDrawerCollapsed$ | async) ? 'Sign Out' : 'Sign Out'">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
