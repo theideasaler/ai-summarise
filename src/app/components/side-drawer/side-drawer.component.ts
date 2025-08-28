@@ -8,6 +8,7 @@ import { DrawerService } from '../../services/drawer.service';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 import { Observable, combineLatest, BehaviorSubject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 interface NavigationItem {
   id: string;
@@ -20,7 +21,13 @@ interface NavigationItem {
 @Component({
   selector: 'app-side-drawer',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule, UserAvatarComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatIconModule,
+    UserAvatarComponent,
+    MatTooltipModule,
+  ],
   templateUrl: './side-drawer.component.html',
   styleUrl: './side-drawer.component.scss',
 })
@@ -49,14 +56,14 @@ export class SideDrawerComponent implements OnInit {
     {
       id: 'youtube',
       label: 'YouTube Video',
-      description: 'Summarize YouTube videos',
+      description: 'Summarise YouTube videos',
       icon: 'smart_display',
       route: '/summarise/youtube',
     },
     {
       id: 'text',
       label: 'Text Content',
-      description: 'Summarize text documents',
+      description: 'Summarise text documents',
       icon: 'article',
       route: '/summarise/text',
     },
@@ -70,21 +77,21 @@ export class SideDrawerComponent implements OnInit {
     {
       id: 'audio',
       label: 'Audio Content',
-      description: 'Transcribe and summarize audio',
+      description: 'Transcribe and summarise audio',
       icon: 'audiotrack',
       route: '/summarise/audio',
     },
     {
       id: 'video',
       label: 'Video Content',
-      description: 'Summarize video files',
+      description: 'Summarise video files',
       icon: 'videocam',
       route: '/summarise/video',
     },
     {
       id: 'webpage',
       label: 'Web Page',
-      description: 'Summarize web content',
+      description: 'Summarise web content',
       icon: 'language',
       route: '/summarise/webpage',
     },

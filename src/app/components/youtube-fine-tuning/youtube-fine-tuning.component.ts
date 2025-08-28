@@ -10,6 +10,7 @@ import {
   OnChanges,
   SimpleChanges,
 } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,7 +20,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject, takeUntil } from 'rxjs';
-import { VideoFinetuningConfig } from '../../models/types';
+import { VideoFineTuningConfig } from '../../models/types';
 
 @Component({
   selector: 'app-youtube-fine-tuning',
@@ -35,17 +36,17 @@ import { VideoFinetuningConfig } from '../../models/types';
     FormsModule,
   ],
   templateUrl: './youtube-fine-tuning.component.html',
-  styleUrl: './youtube-fine-tuning.component.scss',
+  styleUrl: './youtube-fine-tuning.component.scss'
 })
-export class YoutubeFinetuningComponent
+export class YoutubeFineTuningComponent
   implements OnInit, OnDestroy, OnChanges
 {
   // Classic @Input()s with values
   @Input() videoDuration: number | null = null;
   @Input() isExpanded: boolean = false;
-  @Input() initialConfig: VideoFinetuningConfig | null = null;
+  @Input() initialConfig: VideoFineTuningConfig | null = null;
 
-  @Output() configChange = new EventEmitter<VideoFinetuningConfig>();
+  @Output() configChange = new EventEmitter<VideoFineTuningConfig>();
 
   private destroy$ = new Subject<void>();
   private promptSubject = new Subject<string>();
@@ -57,7 +58,7 @@ export class YoutubeFinetuningComponent
   customPrompt = signal<string>('');
 
   // Computed values
-  config = computed<VideoFinetuningConfig>(() => ({
+  config = computed<VideoFineTuningConfig>(() => ({
     startSeconds: this.startSeconds(),
     endSeconds: this.endSeconds(),
     fps: this.fps(),
@@ -153,5 +154,61 @@ export class YoutubeFinetuningComponent
 
   private emitConfigChange() {
     this.configChange.emit(this.config());
+  }
+
+  // Resize handle functionality
+  private isResizing = false;
+  private startY = 0;
+  private startHeight = 0;
+  private textarea: HTMLTextAreaElement | null = null;
+
+  onResizeStart(event: MouseEvent | TouchEvent) {
+    event.preventDefault();
+    this.isResizing = true;
+    
+    // Get the textarea element
+    const container = (event.target as HTMLElement).closest('.textarea-container');
+    this.textarea = container?.querySelector('textarea') as HTMLTextAreaElement;
+    
+    if (!this.textarea) return;
+    
+    // Get initial values
+    this.startY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
+    this.startHeight = this.textarea.offsetHeight;
+    
+    // Add global event listeners
+    document.addEventListener('mousemove', this.onResize.bind(this));
+    document.addEventListener('mouseup', this.onResizeEnd.bind(this));
+    document.addEventListener('touchmove', this.onResize.bind(this));
+    document.addEventListener('touchend', this.onResizeEnd.bind(this));
+    
+    // Prevent text selection during resize
+    document.body.style.userSelect = 'none';
+  }
+
+  private onResize(event: MouseEvent | TouchEvent) {
+    if (!this.isResizing || !this.textarea) return;
+    
+    const currentY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
+    const deltaY = currentY - this.startY;
+    const newHeight = Math.max(72, this.startHeight + deltaY); // Minimum height of 72px
+    
+    this.textarea.style.height = `${newHeight}px`;
+  }
+
+  private onResizeEnd() {
+    if (!this.isResizing) return;
+    
+    this.isResizing = false;
+    this.textarea = null;
+    
+    // Remove global event listeners
+    document.removeEventListener('mousemove', this.onResize.bind(this));
+    document.removeEventListener('mouseup', this.onResizeEnd.bind(this));
+    document.removeEventListener('touchmove', this.onResize.bind(this));
+    document.removeEventListener('touchend', this.onResizeEnd.bind(this));
+    
+    // Restore text selection
+    document.body.style.userSelect = '';
   }
 }

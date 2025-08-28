@@ -60,3 +60,45 @@ h5 { font-size: 1.6rem; line-height: 1.5; } /* 16px */
 h6 { font-size: 1.6rem; line-height: 1.5; } /* 16px */
 p, span, div { font-size: 1.6rem; line-height: 1.6; } /* 16px */
 small { font-size: 1.4rem; line-height: 1.4; } /* 14px - only for truly small text */
+
+/* Global tooltip styling - consistent with FPS tooltip */
+::ng-deep .mat-mdc-tooltip {
+  background: #1f2937 !important;
+  color: white !important;
+  font-size: 1.2rem !important; /* 12px - acceptable for tooltips */
+  line-height: 1.4 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  max-width: 280px !important;
+  text-align: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+::ng-deep .mat-mdc-tooltip-surface {
+  background: transparent !important;
+}
+
+::ng-deep .mdc-tooltip__surface {
+  background: transparent !important;
+}
+
+/* Consistent tooltip class for all tooltips */
+::ng-deep .consistent-tooltip {
+  background: #1f2937 !important;
+  color: white !important;
+  font-size: 1.2rem !important; /* 12px - acceptable for tooltips */
+  line-height: 1.4 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  max-width: 280px !important;
+  text-align: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+
+  .mat-mdc-tooltip-surface {
+    background: transparent !important;
+  }
+
+  .mdc-tooltip__surface {
+    background: transparent !important;
+  }
+}

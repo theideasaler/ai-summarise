@@ -1,0 +1,38 @@
+<div class="multiline-input-container" [@slideInOut]>
+  <div class="input-card">
+    <div class="input-header">
+      <h4>Fine-tuning Instructions</h4>
+      <button mat-icon-button (click)="onCancel()" class="close-button">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="input-content">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Enter your fine-tuning instructions</mat-label>
+        <textarea 
+          matInput 
+          rows="4" 
+          [value]="inputValue()" 
+          (input)="onInputChange($event)"
+          placeholder="Describe how you'd like to modify the summary (e.g., 'Make it more technical', 'Focus on key benefits', 'Summarise in bullet points')"
+          class="multiline-textarea">
+        </textarea>
+      </mat-form-field>
+    </div>
+    
+    <div class="input-actions">
+      <button mat-button (click)="onCancel()" class="cancel-button">
+        Cancel
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="onSubmit()" 
+        [disabled]="!inputValue().trim()"
+        class="submit-button">
+        Apply Fine-tuning
+      </button>
+    </div>
+  </div>
+</div>

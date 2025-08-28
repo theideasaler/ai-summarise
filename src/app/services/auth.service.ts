@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, from } from 'rxjs';
 import { User, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
-import { ApiService } from './api.service';
 
 export interface AuthUser {
   uid: string;
@@ -40,7 +39,6 @@ export class AuthService {
 
   constructor(
     private firebaseService: FirebaseService,
-    private apiService: ApiService,
     private router: Router
   ) {
     // Initialize auth state asynchronously

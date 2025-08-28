@@ -2,20 +2,18 @@
   background: transparent;
   border-radius: 0;
   border: none;
-  padding: 0;
+  padding: 1.5rem;
   margin: 0;
+  overflow: visible;
+  
 
-  &.expanded {
-    background: transparent;
-    padding: 1.5rem;
-  }
 }
 
 .controls-row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   align-items: start;
   background: white;
   padding: 1.5rem;
@@ -195,7 +193,7 @@
   border: 1px solid #f1f5f9;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 
   .prompt-field {
     width: 100%;
@@ -248,56 +246,84 @@
 
 .prompt-row {
   width: 100%;
+  overflow: visible;
+
+  .textarea-container {
+    position: relative;
+    width: 100%;
+    overflow: visible;
+  }
 
   .prompt-field {
     width: 100%;
+    overflow: visible;
+
+    ::ng-deep .mat-mdc-form-field-wrapper {
+      overflow: visible;
+    }
+
+    ::ng-deep .mat-mdc-form-field-flex {
+      overflow: visible;
+    }
+
+    ::ng-deep .mat-mdc-form-field-infix {
+      overflow: visible;
+      padding-bottom: 8px;
+    }
+
+    ::ng-deep .mdc-text-field {
+      overflow: visible;
+    }
+
+    ::ng-deep .mdc-text-field__input {
+      overflow: visible;
+    }
 
     textarea {
-      resize: vertical;
+      resize: vertical !important;
       min-height: 72px;
       max-height: none;
       height: 72px;
       overflow-y: auto;
       line-height: 1.5;
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  .resize-handle {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    cursor: nw-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    z-index: 10;
+    pointer-events: auto;
+
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #64748b;
+      transform: rotate(45deg);
     }
   }
 }
 
-// Custom tooltip styling
-::ng-deep .fps-tooltip {
-  background: #1f2937 !important;
-  color: white !important;
-  font-size: 1.2rem !important; /* 12px - acceptable for tooltips */
-  line-height: 1.4 !important;
-  padding: 8px 12px !important;
-  border-radius: 6px !important;
-  max-width: 280px !important;
-  text-align: center !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+// Tooltip styling now handled globally in styles.scss
 
-  .mat-mdc-tooltip-surface {
-    background: transparent !important;
-  }
-
-  .mdc-tooltip__surface {
-    background: transparent !important;
-  }
-}
-
-// Animation states
-.fine-tuning-container:not(.expanded) {
-  .controls-row,
-  .prompt-row {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-}
-
-.fine-tuning-container.expanded {
-  .controls-row,
-  .prompt-row {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.3s ease-in-out 0.1s, transform 0.3s ease-in-out 0.1s;
-  }
-}
+// Animation styles for Angular animations
+// Removed old CSS animation styles to prevent conflicts with Angular animations

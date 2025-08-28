@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000',
+  apiUrl: 'http://localhost:8787',
   firebase: {
     apiKey: 'AIzaSyBNJN8l0xiiCxYGrcPVyPEf6y-XZl_MThY',
     authDomain: 'ai-summarise-be.firebaseapp.com',
