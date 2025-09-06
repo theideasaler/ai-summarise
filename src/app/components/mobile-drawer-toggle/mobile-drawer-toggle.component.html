@@ -1,0 +1,8 @@
+<button 
+  class="mobile-toggle-btn" 
+  (click)="toggleDrawer()" 
+  [class.active]="isDrawerOpen$ | async"
+  title="Toggle Menu"
+  aria-label="Toggle navigation menu">
+  <mat-icon>{{ (isDrawerOpen$ | async) ? 'close' : 'menu' }}</mat-icon>
+</button>

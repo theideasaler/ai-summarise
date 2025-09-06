@@ -1,0 +1,16 @@
+<div class="summarise-layout">
+  <!-- Mobile Drawer Toggle -->
+  <app-mobile-drawer-toggle></app-mobile-drawer-toggle>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" [class.active]="isDrawerOpen$ | async" (click)="closeDrawer()"></div>
+
+  <!-- Side Drawer -->
+  <app-side-drawer></app-side-drawer>
+
+  <!-- Main Content Area -->
+  <div class="content-area" [class.drawer-collapsed]="isDesktopDrawerCollapsed$ | async">
+    <router-outlet></router-outlet>
+    <app-summarise-options *ngIf="showOptions"></app-summarise-options>
+  </div>
+</div>

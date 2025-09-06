@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
-import { MultiFunctionalInputComponent } from '../multi-functional-input/multi-functional-input.component';
+import { RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-home',
-  imports: [MultiFunctionalInputComponent],
+  imports: [RouterLink, MatButtonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })

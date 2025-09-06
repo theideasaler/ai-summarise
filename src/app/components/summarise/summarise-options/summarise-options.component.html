@@ -1,0 +1,27 @@
+<div class="summarise-options-container">
+  <div class="options-header">
+    <h1>What would you like to summarise?</h1>
+    <p class="subtitle">Choose from the options below to get started</p>
+  </div>
+
+  <div class="options-grid">
+    <mat-card 
+      *ngFor="let option of options" 
+      class="option-card"
+      (click)="navigateToOption(option.route)"
+      [style.--option-color]="option.color">
+      <mat-card-content>
+        <div class="option-icon">
+          <mat-icon [style.color]="option.color">{{ option.icon }}</mat-icon>
+        </div>
+        <div class="option-content">
+          <h3>{{ option.title }}</h3>
+          <p>{{ option.description }}</p>
+        </div>
+        <div class="option-arrow">
+          <mat-icon>arrow_forward</mat-icon>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

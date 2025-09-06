@@ -1,0 +1,60 @@
+<div class="summary-card-container" *ngIf="summaryData || isLoading" [@slideInOut]>
+  <div class="summary-card">
+    <!-- Regenerating Overlay -->
+    <div class="regenerating-overlay" *ngIf="isRegenerating">
+      <div class="regenerating-text">Regenerating...</div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading && !summaryData" class="summary-header">
+      <div class="summary-title-section">
+        <h3>Summary</h3>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading && !summaryData" class="summary-content loading-content">
+      <div class="loading-indicator">
+        <span class="loading-text">Thinking</span>
+        <div class="loading-dots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loaded State -->
+    <div *ngIf="summaryData" class="summary-header">
+      <div class="summary-title-section">
+        <h3>Summary</h3>
+        <div class="summary-badges">
+          <span class="badge tokens-badge">{{ summaryData.tokensUsed | number}} tokens</span>
+          <span class="badge time-badge">{{ summaryData.processingTime | number}}ms</span>
+        </div>
+      </div>
+      <!-- <div class="summary-actions">
+        <button mat-icon-button class="clear-button" (click)="onClear()" matTooltip="Clear summary">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </div> -->
+    </div>
+
+    <div *ngIf="summaryData" class="summary-content">
+      <p>{{ summaryData.summary }}</p>
+    </div>
+
+    <div *ngIf="summaryData" class="summary-footer">
+      <button mat-raised-button class="regenerate-button" (click)="onRegenerate()" [disabled]="isRegenerating">
+        <mat-icon>refresh</mat-icon>
+        Regenerate
+      </button>
+
+      <button mat-raised-button color="primary" class="copy-button-footer" (click)="onCopy()">
+        <mat-icon>content_copy</mat-icon>
+        {{ copyButtonText() }}
+      </button>
+    </div>
+  </div>
+
+
+</div>

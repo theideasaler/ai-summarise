@@ -1,11 +1,104 @@
 /* You can add global styles to this file, and also import other style files */
-body,
 html {
+  font-size: 62.5%; /* 1rem = 10px */
+}
+
+body {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
+  font-size: 1.6rem; /* 16px - minimum readable size */
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  overflow-x: hidden;
+  line-height: 1.5; /* Improved readability */
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+app-root {
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.mat-mdc-notch-piece.mdc-notched-outline__leading {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.mat-mdc-notch-piece.mdc-notched-outline__trailing {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+iframe.youtube-player {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.no-form-field-bottom-space {
+  .mat-mdc-form-field-bottom-align {
+    display: none;
+  }
+}
+
+/* Prevent iOS Safari zoom on input focus */
+input, textarea, select {
+  font-size: 1.6rem !important; /* 16px */
+}
+
+/* Ensure Material Design inputs also have proper font size */
+.mat-mdc-input-element {
+  font-size: 1.6rem !important; /* 16px */
+}
+
+/* Typography scale for better SEO and readability */
+h1 { font-size: 3.2rem; line-height: 1.2; } /* 32px */
+h2 { font-size: 2.4rem; line-height: 1.3; } /* 24px */
+h3 { font-size: 2.0rem; line-height: 1.4; } /* 20px */
+h4 { font-size: 1.8rem; line-height: 1.4; } /* 18px */
+h5 { font-size: 1.6rem; line-height: 1.5; } /* 16px */
+h6 { font-size: 1.6rem; line-height: 1.5; } /* 16px */
+p, span, div { font-size: 1.6rem; line-height: 1.6; } /* 16px */
+small { font-size: 1.4rem; line-height: 1.4; } /* 14px - only for truly small text */
+
+/* Global tooltip styling - consistent with FPS tooltip */
+::ng-deep .mat-mdc-tooltip {
+  background: #1f2937 !important;
+  color: white !important;
+  font-size: 1.2rem !important; /* 12px - acceptable for tooltips */
+  line-height: 1.4 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  max-width: 280px !important;
+  text-align: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+::ng-deep .mat-mdc-tooltip-surface {
+  background: transparent !important;
+}
+
+::ng-deep .mdc-tooltip__surface {
+  background: transparent !important;
+}
+
+/* Consistent tooltip class for all tooltips */
+::ng-deep .consistent-tooltip {
+  background: #1f2937 !important;
+  color: white !important;
+  font-size: 1.2rem !important; /* 12px - acceptable for tooltips */
+  line-height: 1.4 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  max-width: 280px !important;
+  text-align: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+
+  .mat-mdc-tooltip-surface {
+    background: transparent !important;
+  }
+
+  .mdc-tooltip__surface {
+    background: transparent !important;
+  }
+}
