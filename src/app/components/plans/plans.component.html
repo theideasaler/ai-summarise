@@ -1,0 +1,81 @@
+<div class="plans-container">
+  <!-- Header Section -->
+  <div class="plans-header">
+    <h1 class="page-title">Pricing that grows with you</h1>
+    <p class="page-subtitle">
+      Choose an affordable plan that's packed with the best features for
+      engaging your audience, creating customer loyalty, and driving sales.
+    </p>
+  </div>
+
+  <!-- Plans Grid -->
+  <div class="plans-grid">
+    <div 
+      *ngFor="let plan of subscriptionPlans" 
+      class="plan-card"
+      [class.popular]="plan.popular"
+      [class.current]="plan.current">
+      
+      <!-- Plan Header -->
+      <div class="plan-header">
+        <h3 class="plan-name">{{ plan.name }}</h3>
+        <div class="plan-price">
+          <span class="currency">$</span>
+          <span class="amount">{{ plan.price }}</span>
+          <span class="period" *ngIf="plan.price > 0">
+            <span class="text-sm">USD</span>
+            <span class="text-xs">Billed monthly</span>
+          </span>
+        </div>
+      </div>
+      
+      <!-- Tokens Display -->
+      <div class="tokens-display" *ngIf="plan.tokens > 0">
+        <mat-icon>toll</mat-icon>
+        <span class="tokens-amount">{{ plan.tokens | number }}</span>
+        <span class="tokens-label">tokens per month</span>
+      </div>
+      
+      <div class="tokens-display" *ngIf="plan.tokens === 0">
+        <span class="no-tokens">No monthly tokens</span>
+      </div>
+      
+      <!-- Request Limit -->
+      <div class="request-limit">
+        <mat-icon>schedule</mat-icon>
+        <span>Max {{ plan.maxRequests }} request{{ plan.maxRequests > 1 ? 's' : '' }} at a time</span>
+      </div>
+<!-- Data Privacy Notice -->
+<div class="data-privacy" *ngIf="plan.dataPrivacy">
+  <mat-icon>{{ plan.id === 'free' ? 'info' : 'lock' }}</mat-icon>
+  <span>{{ plan.dataPrivacy }}</span>
+      </div>
+
+      <!-- Plan Features -->
+      <div class="plan-features">
+        <ul class="features-list">
+          <li *ngFor="let feature of plan.features" [class.included]="feature.included">
+            <mat-icon>{{ feature.included ? 'check' : 'close' }}</mat-icon>
+            <span>{{ feature.name }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Plan Action -->
+      <div class="plan-action">
+        <button 
+          mat-raised-button 
+          [color]="plan.current ? '' : 'primary'"
+          [disabled]="plan.current"
+          (click)="onPlanAction(plan)"
+          class="plan-button"
+          [class.current-plan]="plan.current">
+          {{ plan.buttonText }}
+        </button>
+        <span *ngIf="!plan.current && plan.price > 0" class="cancel-notice">
+          Cancel Anytime
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

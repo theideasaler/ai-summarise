@@ -9,7 +9,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   email = '';
@@ -18,15 +18,14 @@ export class LoginComponent {
   errorMessage = '';
   showPassword = false;
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(private authService: AuthService, private router: Router) {
+    console.log('login component landed');
+  }
 
   async signInWithGoogle(): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
-    
+
     try {
       await this.authService.signInWithGoogle();
       this.router.navigate(['/summarise']);
@@ -45,7 +44,7 @@ export class LoginComponent {
 
     this.isLoading = true;
     this.errorMessage = '';
-    
+
     try {
       await this.authService.signInWithEmail(this.email, this.password);
       this.router.navigate(['/summarise']);

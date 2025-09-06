@@ -1,0 +1,135 @@
+<div class="audio-summarise-container no-form-field-bottom-space">
+  <!-- Summary Result (match YouTube: show during loading) -->
+  <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
+    [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"
+    (clear)="onClearSummary()" (copy)="copySummary()">
+  </app-summary-result>
+  
+  <!-- Rewrite Action Bar -->
+  <div class="rewrite-action-bar-container" *ngIf="summaryResult() && !isLoadingSummary()">
+    <app-rewrite-fine-tuning [isExpanded]="isRewriteFineTuningExpanded()" [tokenCount]="summaryResult()?.tokensUsed || 0"
+      (expandedChange)="onRewriteFineTuningExpandedChange($event)" (rewriteSubmit)="onRewriteFineTuningSubmit($event)"
+      (customPromptSaved)="onCustomPromptSaved($event)">
+    </app-rewrite-fine-tuning>
+  </div>
+  
+  <!-- Rewritten Summary (match YouTube: show during loading; show dots) -->
+  <div class="rewritten-summary-container" *ngIf="rewrittenSummary() || isRewriteLoading()">
+    <app-rewritten-summary [rewrittenData]="getRewrittenSummaryData()" [isRewriting]="isRegeneratingRewrite()"
+      [isLoading]="isRewriteLoading() && !rewrittenSummary()" (rewriteAgain)="onRewriteAgain()"
+      (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+    </app-rewritten-summary>
+  </div>
+  
+  <!-- Marketing Hero (when no summary) -->
+  <div class="marketing-hero" *ngIf="!summaryResult() && !isLoadingSummary()">
+    <div class="hero-content">
+      <h1 class="hero-title">Transform Audio into Actionable Insights</h1>
+      <p class="hero-subtitle">
+        Upload audio files to transcribe, analyse, and extract key information from podcasts, meetings, and recordings
+      </p>
+      <div class="hero-features">
+        <div class="feature-item">
+          <mat-icon>mic</mat-icon>
+          <span>Speech Recognition</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>transcribe</mat-icon>
+          <span>Accurate Transcription</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>insights</mat-icon>
+          <span>Key Insights</span>
+          </div>
+          </div>
+          </div>
+          </div>
+          
+          <div class="bottom-space" [style.height.px]="bottomSpaceHeight()"></div>
+          <!-- Fixed Bottom Section -->
+          <div class="fixed-bottom-section">
+            <!-- Input Card -->
+            <div class="input-card" #inputCard>
+              <!-- Fine-tuning Card (appears above input when toggled) -->
+              <div class="settings-card" *ngIf="isFineTuningExpanded() && selectedFile()" [@slideInOut]>
+                <div class="card-header">
+                  <div class="header-left">
+                    <mat-icon class="card-icon">tune</mat-icon>
+                    <h3 class="card-title">Fine Tuning</h3>
+                  </div>
+                </div>
+                <div class="fine-tuning-content">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Custom Transcription Prompt</mat-label>
+                    <textarea matInput [value]="customPrompt()" (input)="onFineTuningInput($event)"
+                      placeholder="Specify how you'd like the audio transcribed and analysed (e.g., 'Focus on key points and action items')"
+                      rows="3">
+                    </textarea>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <div class="card-header">
+                <div class="header-left">
+                  <div class="header-title">
+                    <mat-icon class="card-icon">audiotrack</mat-icon>
+                    <h3 class="card-title">Audio Input</h3>
+                  </div>
+
+                  <!-- Token Badge -->
+                  <div *ngIf="selectedFile()" [class.loading]="isLoadingTokens()">
+                    <!-- Show loading dots when loading tokens -->
+                    <ng-container *ngIf="isLoadingTokens()">
+                      <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </ng-container>
+          
+                    <!-- Show token count when we have tokens -->
+                    <ng-container *ngIf="!isLoadingTokens() && tokenCount()">
+                      <div class="token-badge" (click)="tooltipToken.toggle()">
+                        <span class="token-count">{{ tokenCount() | number }} tokens</span>
+                        <mat-icon class="info-icon" #tooltipToken="matTooltip"
+                          [matTooltip]="'This is an estimated token count for processing your audio file. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.'">info</mat-icon>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+                <div class="header-right">
+                  <!-- Fine-tuning Toggle -->
+                  <div class="tune-button-container">
+                    <button mat-icon-button class="fine-tuning-button" [class.active]="isFineTuningExpanded()"
+                      (click)="toggleFineTuning()" matTooltip="Fine-tune analysis" [disabled]="!selectedFile()">
+                      <mat-icon>tune</mat-icon>
+                    </button>
+                    <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+                  </div>
+                </div>
+              </div>
+        
+        <div class="input-content">
+          <!-- File Upload -->
+          <app-file-upload [acceptedTypes]="acceptedTypes" [multiple]="false"
+            [placeholder]="'Drag and drop an audio file here or click to browse'" [fileType]="'audio'"
+            (filesSelected)="onFilesSelected($event)" (fileRemoved)="onFileRemoved()" (error)="submitError.set($event)">
+          </app-file-upload>
+        
+          <!-- Error Message -->
+          <div *ngIf="submitError()" class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ submitError() }}</span>
+          </div>
+        
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" class="submit-button" [disabled]="!canSubmit()" (click)="onSubmit()">
+              <mat-icon>auto_awesome</mat-icon>
+              {{ isSubmitting() ? 'Summarising...' : 'Summarise' }}
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

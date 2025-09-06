@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, from } from 'rxjs';
 import { User, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
+import { LoggerService } from './logger.service';
 
 export interface AuthUser {
   uid: string;
@@ -26,24 +27,25 @@ export interface UserProfile {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
   private userProfileSubject = new BehaviorSubject<UserProfile | null>(null);
   private isLoadingSubject = new BehaviorSubject<boolean>(true);
-  
+
   public currentUser$ = this.currentUserSubject.asObservable();
   public userProfile$ = this.userProfileSubject.asObservable();
   public isLoading$ = this.isLoadingSubject.asObservable();
 
   constructor(
     private firebaseService: FirebaseService,
-    private router: Router
+    private router: Router,
+    private logger: LoggerService
   ) {
     // Initialize auth state asynchronously
-    this.initializeAuthState().catch(error => {
-      console.error('Error initializing auth state:', error);
+    this.initializeAuthState().catch((error) => {
+      this.logger.error('Error initializing auth state:', error);
       this.isLoadingSubject.next(false);
     });
   }
@@ -76,7 +78,7 @@ export class AuthService {
           return;
         }
       } catch (error) {
-        console.error('Error validating stored token:', error);
+        this.logger.error('Error validating stored token:', error);
         // Clear invalid token and continue with Firebase auth
         this.clearAuthToken();
       }
@@ -101,7 +103,7 @@ export class AuthService {
           this.setAuthToken(idToken);
           await this.loadUserProfile();
         } catch (error) {
-          console.error('Error loading user profile:', error);
+          this.logger.error('Error loading user profile:', error);
         }
       } else {
         this.currentUserSubject.next(null);
@@ -118,14 +120,14 @@ export class AuthService {
     try {
       const auth = this.firebaseService.getAuth();
       const provider = new GoogleAuthProvider();
-      
+
       // Add scopes for additional user info
       provider.addScope('profile');
       provider.addScope('email');
-      
+
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       if (!user) {
         throw new Error('No user returned from Google sign-in');
       }
@@ -135,12 +137,12 @@ export class AuthService {
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
       };
 
       return authUser;
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      this.logger.error('Google sign-in error:', error);
       throw error;
     }
   }
@@ -149,18 +151,18 @@ export class AuthService {
   async signInWithEmail(email: string, password: string): Promise<AuthUser> {
     try {
       const user = await this.firebaseService.signInWithEmail(email, password);
-      
+
       const authUser: AuthUser = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
       };
 
       return authUser;
     } catch (error) {
-      console.error('Email sign-in error:', error);
+      this.logger.error('Email sign-in error:', error);
       throw error;
     }
   }
@@ -169,18 +171,18 @@ export class AuthService {
   async signUpWithEmail(email: string, password: string): Promise<AuthUser> {
     try {
       const user = await this.firebaseService.signUpWithEmail(email, password);
-      
+
       const authUser: AuthUser = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
       };
 
       return authUser;
     } catch (error) {
-      console.error('Email sign-up error:', error);
+      this.logger.error('Email sign-up error:', error);
       throw error;
     }
   }
@@ -193,7 +195,7 @@ export class AuthService {
       // Navigate to home page after successful logout
       await this.router.navigate(['/']);
     } catch (error) {
-      console.error('Sign out error:', error);
+      this.logger.error('Sign out error:', error);
       throw error;
     }
   }
@@ -217,11 +219,11 @@ export class AuthService {
   async getIdToken(): Promise<string | null> {
     const auth = this.firebaseService.getAuth();
     const user = auth.currentUser;
-    
+
     if (user) {
       return await user.getIdToken();
     }
-    
+
     return null;
   }
 
@@ -241,13 +243,13 @@ export class AuthService {
           tokenBalance: 1000,
           dailyTokensUsed: 0,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
-        
+
         this.userProfileSubject.next(mockProfile);
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      this.logger.error('Error loading user profile:', error);
     }
   }
 

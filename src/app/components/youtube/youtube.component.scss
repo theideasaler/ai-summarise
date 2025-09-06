@@ -1,16 +1,22 @@
 .youtube-container {
-  min-height: 100vh;
+  max-height: calc(100dvh - 40px);
+  overflow-y: hidden;
   background: var(--bg-primary);
   padding: 2rem;
   width: 100%;
   box-sizing: border-box;
+
+  @media screen and (max-width: 768px) {
+    padding: 1rem;
+  }
 }
 
 // Main Content
 .main-content {
   border-radius: 12px;
   background: #fafafa;
-  min-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
   position: relative;
   width: 100%;
   max-width: 1200px;
@@ -22,10 +28,10 @@
 
 // Fixed Bottom Section
 .fixed-bottom-section {
-  position: fixed;
+  position: absolute;
   bottom: 20px;
-  left: 280px; // Start after the expanded sidebar
-  right: 0;
+  left: 10px; // Start after the expanded sidebar
+  right: 10px;
   transform: none;
   width: auto;
   max-width: none;
@@ -37,6 +43,11 @@
   align-items: center;
   box-sizing: border-box;
   transition: left 0.3s ease; // Smooth transition when sidebar collapses
+
+  @media screen and (max-width: 768px) {
+    left: 0;
+    right: 0;
+  }
 
   &.drawer-collapsed {
     left: 80px; // Adjust for collapsed sidebar
@@ -67,6 +78,14 @@
   }
 }
 
+// Rewrite Fine-Tuning Container
+.rewrite-fine-tuning-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
 // Settings card without hover animations
 .settings-card {
   background: white;
@@ -87,11 +106,11 @@
 }
 
 .input-card {
-  width: calc(100% - 40px); // 20px margin on each side
+  width: calc(100% - 20px); // 20px margin on each side
   max-width: 960px;
   margin: 0 20px;
   position: absolute;
-  bottom: 20px;
+  bottom: 10px;
   z-index: 10;
   box-sizing: border-box;
 }
@@ -173,6 +192,32 @@
     background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
     border-color: #e0e0e0;
     padding: 8px 16px;
+  }
+}
+
+// Token Error Display
+.token-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef2f2;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #dc2626;
+  cursor: help;
+
+  .error-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #ef4444;
+  }
+
+  .error-text {
+    white-space: nowrap;
+    font-size: 0.875rem;
   }
 }
 
@@ -364,11 +409,10 @@
 
 .red-dot-badge {
   position: absolute;
-  bottom: -10px;
-  right: 50%;
-  transform: translateX(50%);
-  width: 6px;
-  height: 6px;
+  bottom: 12px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
   background: #ef4444;
   border-radius: 50%;
   border: 1px solid white;
@@ -405,13 +449,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 2rem 2rem;
-  margin-top: 0;
+  margin: 1rem 2rem 2rem 2rem;
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
   border: 1px solid #fca5a5;
   border-radius: 12px;
   color: #dc2626;
+  position: relative;
+  z-index: 1; // Keep error message below settings card
   font-size: 1.6rem; /* 16px */
   font-weight: 500;
 
@@ -458,12 +503,11 @@
   }
 
   .input-card {
-    width: calc(100% - 40px);
+    width: calc(100% - 20px);
     margin: 0 20px;
   }
 
   .settings-card {
-    width: calc(100% - 40px);
     margin: 0 20px 1rem;
   }
 
@@ -525,12 +569,11 @@
   }
 
   .input-card {
-    width: calc(100% - 40px);
+    width: calc(100% - 20px);
     margin: 0 20px;
   }
 
   .settings-card {
-    width: calc(100% - 40px);
     margin: 0 20px 1rem;
   }
 }
@@ -640,18 +683,15 @@
 
 // Settings card styling for fine-tuning
 .settings-card {
-  width: calc(100% - 40px); // 20px margin on each side
   max-width: 960px;
   margin: 0;
   position: absolute;
-  bottom: 180px;
-  z-index: 10;
+  top: 0;
+  transform: translateY(calc(-100% - 10px));
+  z-index: 15; // Higher than input-card to prevent overlap
   overflow: visible;
   box-sizing: border-box;
-
-  @media screen and (max-width: 768px) {
-    bottom: 225px;
-  }
+  transition: bottom 0.3s ease; // Smooth transition when error appears
 }
 
 // Rewrite Card Container
@@ -685,9 +725,9 @@
 
   .rewrite-icon {
     color: #667eea;
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
   }
 
@@ -798,10 +838,6 @@
   .rewrite-card {
     gap: 8px;
 
-    .rewrite-text {
-      font-size: 0.9rem;
-    }
-
     .send-button,
     .fine-tuning-button {
       width: 36px;
@@ -818,11 +854,137 @@
   .token-badge-summary {
     padding: 4px 8px;
     font-size: 0.7rem;
+  }
+}
 
-    .info-icon {
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
+.bottom-space {
+  width: 100%;
+  transition: height 0.3s ease; // Smooth transitions
+}
+
+.top-space {
+  height: 0;
+  @media screen and (max-width: 768px) {
+    height: 40px;
+  }
+}
+
+// Rewritten Summary Container
+.rewritten-summary-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 2rem auto;
+  box-sizing: border-box;
+}
+
+.rewritten-summary-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+
+    .card-icon {
+      color: #667eea;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
     }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .header-badges {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .token-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #e0f2fe;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #0277bd;
+
+        .token-count {
+          font-size: 0.875rem;
+          white-space: nowrap;
+        }
+      }
+
+      .processing-time-badge {
+        display: flex;
+        align-items: center;
+        background: #f3e8ff;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #7c3aed;
+
+        .processing-time {
+          font-size: 0.875rem;
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+
+  .card-content {
+    padding: 1.5rem;
+
+    .summary-text {
+      margin: 0;
+      line-height: 1.7;
+      color: #374151;
+      font-size: 1rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  }
+}
+
+// Loading bounce animation
+@keyframes loading-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+// Mobile responsive styles for rewrite components
+@media (max-width: 768px) {
+  .rewritten-summary-card .card-header .header-badges {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
   }
 }

@@ -1,0 +1,135 @@
+<div class="image-summarise-container">
+  <!-- Summary Result (match YouTube: show during loading) -->
+  <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
+    [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"
+    (clear)="onClearSummary()" (copy)="copySummary()">
+  </app-summary-result>
+  
+  <!-- Rewrite Action Bar -->
+  <div class="rewrite-action-bar-container" *ngIf="summaryResult() && !isLoadingSummary()">
+    <app-rewrite-fine-tuning [isExpanded]="isRewriteFineTuningExpanded()" [tokenCount]="summaryResult()?.tokensUsed || 0"
+      (expandedChange)="onRewriteFineTuningExpandedChange($event)" (rewriteSubmit)="onRewriteFineTuningSubmit($event)"
+      (customPromptSaved)="onCustomPromptSaved($event)">
+    </app-rewrite-fine-tuning>
+  </div>
+  
+  <!-- Rewritten Summary (match YouTube: show during loading; show dots) -->
+  <div class="rewritten-summary-container" *ngIf="rewrittenSummary() || isRewriteLoading()">
+    <app-rewritten-summary [rewrittenData]="getRewrittenSummaryData()" [isRewriting]="isRegeneratingRewrite()"
+      [isLoading]="isRewriteLoading() && !rewrittenSummary()" (rewriteAgain)="onRewriteAgain()"
+      (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+    </app-rewritten-summary>
+  </div>
+  
+  <!-- Marketing Hero (when no summary) -->
+  <div class="marketing-hero" *ngIf="!summaryResult() && !isLoadingSummary()">
+    <div class="hero-content">
+      <h1 class="hero-title">Visual Intelligence at Your Fingertips</h1>
+      <p class="hero-subtitle">
+        Upload images to extract meaningful insights, identify objects, and understand visual content with AI
+      </p>
+      <div class="hero-features">
+        <div class="feature-item">
+          <mat-icon>image_search</mat-icon>
+          <span>Object Detection</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>analytics</mat-icon>
+          <span>Content Analysis</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>auto_awesome</mat-icon>
+          <span>Smart Descriptions</span>
+          </div>
+          </div>
+          </div>
+          </div>
+          
+          <div class="bottom-space" [style.height.px]="bottomSpaceHeight()"></div>
+          <!-- Fixed Bottom Section -->
+          <div class="fixed-bottom-section">
+            <!-- Input Card -->
+            <div class="input-card" #inputCard>
+              <!-- Fine-tuning Card (appears above input when toggled) -->
+              <div class="settings-card" *ngIf="isFineTuningExpanded() && selectedFile()" [@slideInOut]>
+                <div class="card-header">
+                  <div class="header-left">
+                    <mat-icon class="card-icon">tune</mat-icon>
+                    <h3 class="card-title">Fine Tuning</h3>
+                  </div>
+                </div>
+                <div class="fine-tuning-content">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Custom Summarisation Prompt</mat-label>
+                    <textarea matInput [value]="customPrompt()" (input)="onFineTuningInput($event)"
+                      placeholder="Enter custom instructions for image analysis..." rows="3">
+                    </textarea>
+                  </mat-form-field>
+                  <!-- No action buttons - matching YouTube pattern -->
+                </div>
+              </div>
+
+              <div class="card-header">
+                <div class="header-left">
+                  <div class="header-title">
+                    <mat-icon class="card-icon">image</mat-icon>
+                    <h3 class="card-title">Image Input</h3>
+                  </div>
+
+                  <!-- Token Badge -->
+                  <div *ngIf="selectedFile()" [class.loading]="isLoadingTokens()">
+                    <!-- Show loading dots when loading tokens -->
+                    <ng-container *ngIf="isLoadingTokens()">
+                      <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </ng-container>
+          
+                    <!-- Show token count when we have tokens -->
+                    <ng-container *ngIf="!isLoadingTokens() && tokenCount()">
+                      <div class="token-badge" (click)="tooltipImage.toggle()">
+                        <span class="token-count">{{ tokenCount() | number }} tokens</span>
+                        <mat-icon class="info-icon" #tooltipImage="matTooltip"
+                          [matTooltip]="'This is an estimated token count for processing your image. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.'">info</mat-icon>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+                <div class="header-right">
+                  <!-- Fine-tuning Toggle -->
+                  <div class="tune-button-container">
+                    <button mat-icon-button class="fine-tuning-button" [class.active]="isFineTuningExpanded()"
+                      (click)="toggleFineTuning()" matTooltip="Fine-tune analysis" [disabled]="!selectedFile()">
+                      <mat-icon>tune</mat-icon>
+                    </button>
+                    <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+                  </div>
+                </div>
+              </div>
+        
+        <div class="input-content">
+          <!-- File Upload -->
+          <app-file-upload [acceptedTypes]="acceptedTypes" [multiple]="false"
+            [placeholder]="'Drag and drop an image here or click to browse'" [fileType]="'image'"
+            (filesSelected)="onFilesSelected($event)" (fileRemoved)="onFileRemoved()" (error)="submitError.set($event)">
+          </app-file-upload>
+        
+          <!-- Error Message -->
+          <div *ngIf="submitError()" class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ submitError() }}</span>
+          </div>
+        
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" class="submit-button" [disabled]="!canSubmit()" (click)="onSubmit()">
+              <mat-icon>auto_awesome</mat-icon>
+              {{ isSubmitting() ? 'Summarising...' : 'Summarise' }}
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

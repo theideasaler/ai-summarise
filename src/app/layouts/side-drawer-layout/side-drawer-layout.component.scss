@@ -1,0 +1,46 @@
+.side-drawer-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: #ffffff;
+}
+
+.layout-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 0;
+  background-color: #ffffff;
+  margin-left: 280px; // Account for side drawer width
+  transition: margin-left 0.3s ease;
+}
+
+// Drawer state adjustments
+.main-content.drawer-collapsed {
+  margin-left: 80px; // Account for collapsed drawer width
+}
+
+.main-content.drawer-mobile-open {
+  margin-left: 0; // No margin on mobile when drawer is overlay
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+    margin-left: 0 !important; // Remove margin on mobile - drawer becomes overlay
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 0.5rem;
+  }
+}

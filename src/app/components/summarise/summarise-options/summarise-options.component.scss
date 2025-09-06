@@ -2,7 +2,7 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  min-height: calc(100vh - 4rem);
+  min-height: calc(100dvh - 4rem);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -116,7 +116,7 @@
 // Responsive design
 @media (max-width: 768px) {
   .summarise-options-container {
-    padding: 1rem;
+    padding: 60px 1rem;
   }
 
   .options-header h1 {

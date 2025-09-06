@@ -20,10 +20,6 @@
   transition: all 0.3s ease;
   position: relative;
 
-  @media screen and (max-width: 768px) {
-    margin-top: 2.5rem;
-  }
-
   &:hover {
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
@@ -158,6 +154,10 @@
     padding: 20px 24px;
     background: rgb(244 244 244 / 50%);
 
+    @media screen and (max-width: 768px) {
+      max-height: calc(100dvh - 520px);
+    }
+
     p {
       margin: 0;
       line-height: 1.7;
@@ -224,7 +224,6 @@
     button {
       display: flex;
       align-items: center;
-      gap: 8px;
       font-weight: 500;
       border-radius: 12px;
       transition: all 0.2s ease;

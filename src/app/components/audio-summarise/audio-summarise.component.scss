@@ -1,0 +1,198 @@
+// Use shared media styles
+@use '../shared/media-summarise.scss' as media;
+
+// Container (align with YouTube container)
+.audio-summarise-container {
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// Fixed bottom section and cards (non-overlapping, 5px gap)
+.fixed-bottom-section {
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  right: 10px;
+  padding: 0 2rem 2rem;
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  > * { pointer-events: auto; }
+  @media (max-width: 768px) { left: 0; right: 0; padding: 0 1rem 1rem; }
+}
+
+.input-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: calc(100% - 20px);
+  max-width: 960px;
+  margin: 0 20px;
+  box-sizing: border-box;
+}
+
+.settings-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  margin-bottom: 2rem;
+  overflow: visible !important;
+  box-sizing: border-box;
+  padding-bottom: 8px;
+  transform-origin: center bottom;
+
+  /* Ensure all child elements maintain overflow visibility */
+  * {
+    overflow: visible;
+  }
+}
+
+// Token Badge - add margin to align with duration badge
+.token-badge {
+  margin-left: 0.5rem;
+}
+
+// Full width for form fields
+.fine-tuning-content {
+  .full-width {
+    width: 100%;
+    
+    ::ng-deep .mat-mdc-form-field {
+      width: 100%;
+    }
+  }
+}
+
+// Rewrite Fine-Tuning Container
+.rewrite-fine-tuning-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 2rem auto;
+  box-sizing: border-box;
+}
+
+// Align rewrite action bar width with YouTube
+.rewrite-action-bar-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 2rem auto;
+  box-sizing: border-box;
+}
+
+.bottom-space {
+  height: 250px;
+}
+
+// Audio Upload Container
+.audio-upload-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 2rem auto;
+  box-sizing: border-box;
+
+  .upload-placeholder {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    border: 2px dashed #e2e8f0;
+    color: #64748b;
+    
+    p {
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .audio-summarise-container {
+    padding: 1rem;
+  }
+  
+  .marketing-hero {
+    padding: 2rem 1.5rem;
+
+    .hero-content {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .hero-left {
+      .hero-text {
+        h1 {
+          font-size: 2rem;
+        }
+
+        .hero-subtitle {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    .hero-right {
+      .marketing-content {
+        padding: 1.5rem;
+
+        h2 {
+          font-size: 1.25rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .marketing-hero {
+    padding: 1.5rem 1rem;
+
+    .hero-left {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+
+      .hero-text {
+        h1 {
+          font-size: 1.75rem;
+        }
+      }
+    }
+
+    .hero-right {
+      .marketing-content {
+        padding: 1rem;
+
+        .feature-list {
+          .feature-item {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.5rem;
+          }
+        }
+      }
+    }
+  }
+
+  .header-left {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}

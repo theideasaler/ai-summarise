@@ -1,14 +1,25 @@
-.mobile-toggle-btn {
+.top-header-bar {
   position: fixed;
-  top: 1rem;
-  left: 1rem;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #fcfcfc;
+  z-index: 999;
+  display: none;
+  height: 60px;
+}
+
+.mobile-toggle-btn {
+  position: relative;
+  top: 6px;
+  left: 6px;
   z-index: 2;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 0.5rem;
   padding: 0.75rem;
   cursor: pointer;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
@@ -50,7 +61,7 @@
 
 // Show only on mobile screens
 @media (max-width: 768px) {
-  .mobile-toggle-btn {
-    display: flex;
+  .top-header-bar {
+    display: block;
   }
 }

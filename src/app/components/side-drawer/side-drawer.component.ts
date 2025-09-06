@@ -5,9 +5,11 @@ import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService, AuthUser } from '../../services/auth.service';
 import { DrawerService } from '../../services/drawer.service';
+import { TokenService } from '../../services/token.service';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 import { Observable, combineLatest, BehaviorSubject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 interface NavigationItem {
@@ -43,6 +45,8 @@ export class SideDrawerComponent implements OnInit {
   // Screen size tracking
   isMobileScreen: boolean = false;
   private isMobileScreen$ = new BehaviorSubject<boolean>(false);
+  // Token information
+  remainingTokens$: Observable<number>;
 
   // Computed observables for proper class management
   shouldShowOpenClass$: Observable<boolean>;
@@ -54,55 +58,29 @@ export class SideDrawerComponent implements OnInit {
 
   navigationItems: NavigationItem[] = [
     {
-      id: 'youtube',
-      label: 'YouTube Video',
-      description: 'Summarise YouTube videos',
-      icon: 'smart_display',
-      route: '/summarise/youtube',
+      id: 'summarise',
+      label: 'Summarise',
+      description: 'Summarise various content types',
+      icon: 'summarize',
+      route: '/summarise',
     },
     {
-      id: 'text',
-      label: 'Text Content',
-      description: 'Summarise text documents',
-      icon: 'article',
-      route: '/summarise/text',
-    },
-    {
-      id: 'image',
-      label: 'Image Analysis',
-      description: 'Analyze and describe images',
-      icon: 'image',
-      route: '/summarise/image',
-    },
-    {
-      id: 'audio',
-      label: 'Audio Content',
-      description: 'Transcribe and summarise audio',
-      icon: 'audiotrack',
-      route: '/summarise/audio',
-    },
-    {
-      id: 'video',
-      label: 'Video Content',
-      description: 'Summarise video files',
-      icon: 'videocam',
-      route: '/summarise/video',
-    },
-    {
-      id: 'webpage',
-      label: 'Web Page',
-      description: 'Summarise web content',
-      icon: 'language',
-      route: '/summarise/webpage',
+      id: 'projects',
+      label: 'Projects',
+      description: 'Manage your summarisation projects',
+      icon: 'folder',
+      route: '/projects',
     },
   ];
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private drawerService: DrawerService
+    private drawerService: DrawerService,
+    private tokenService: TokenService
   ) {
     this.currentUser$ = this.authService.currentUser$;
+    this.remainingTokens$ = toObservable(this.tokenService.remainingTokens);
     // New separate state observables
     this.isMobileDrawerOpen$ = this.drawerService.mobileDrawerOpen$;
     this.isDesktopDrawerCollapsed$ = this.drawerService.desktopDrawerCollapsed$;
@@ -153,7 +131,15 @@ export class SideDrawerComponent implements OnInit {
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.activeRoute = event.url;
+        
+        // Auto-close mobile drawer on navigation completion
+        if (this.isMobileScreen && this.drawerService.isMobileOpen) {
+          this.drawerService.closeMobile();
+        }
       });
+
+    // Initialize token service to fetch token info
+    this.tokenService.initialize();
   }
 
   @HostListener('window:resize', ['$event'])

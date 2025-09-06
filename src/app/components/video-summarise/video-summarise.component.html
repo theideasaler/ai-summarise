@@ -1,0 +1,127 @@
+<div class="video-summarise-container no-form-field-bottom-space">
+  <!-- Summary Result (match YouTube: show during loading) -->
+  <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
+    [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"
+    (clear)="onClearSummary()" (copy)="copySummary()">
+  </app-summary-result>
+  
+  <!-- Rewrite Action Bar -->
+  <div class="rewrite-action-bar-container" *ngIf="summaryResult() && !isLoadingSummary()">
+    <app-rewrite-fine-tuning [isExpanded]="isRewriteFineTuningExpanded()" [tokenCount]="summaryResult()?.tokensUsed || 0"
+      (expandedChange)="onRewriteFineTuningExpandedChange($event)" (rewriteSubmit)="onRewriteFineTuningSubmit($event)"
+      (customPromptSaved)="onCustomPromptSaved($event)">
+    </app-rewrite-fine-tuning>
+  </div>
+  
+  <!-- Rewritten Summary (match YouTube: show during loading; show dots) -->
+  <div class="rewritten-summary-container" *ngIf="rewrittenSummary() || isRewriteLoading()">
+    <app-rewritten-summary [rewrittenData]="getRewrittenSummaryData()" [isRewriting]="isRegeneratingRewrite()"
+      [isLoading]="isRewriteLoading() && !rewrittenSummary()" (rewriteAgain)="onRewriteAgain()"
+      (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+    </app-rewritten-summary>
+  </div>
+  
+  <!-- Marketing Hero (when no summary) -->
+  <div class="marketing-hero" *ngIf="!summaryResult() && !isLoadingSummary()">
+    <div class="hero-content">
+      <h1 class="hero-title">Unlock Video Intelligence with AI</h1>
+      <p class="hero-subtitle">
+        Extract key insights from video content with advanced frame analysis and intelligent summarisation
+      </p>
+      <div class="hero-features">
+        <div class="feature-item">
+          <mat-icon>videocam</mat-icon>
+          <span>Frame Analysis</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>access_time</mat-icon>
+          <span>Time Range Selection</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>speed</mat-icon>
+          <span>FPS Control</span>
+          </div>
+          </div>
+          </div>
+          </div>
+          
+          <div class="bottom-space" [style.height.px]="bottomSpaceHeight()"></div>
+          <!-- Fixed Bottom Section -->
+          <div class="fixed-bottom-section">
+            <!-- Input Card -->
+            <div class="input-card" #inputCard>
+              <!-- Fine-tuning Card (appears above input when toggled) -->
+              <div class="settings-card" *ngIf="isFineTuningExpanded() && selectedFile()?.duration && selectedFile()?.duration! > 0" [@slideInOut]>
+                <div class="card-header">
+                  <mat-icon class="card-icon">tune</mat-icon>
+                  <h3 class="card-title">Fine Tuning</h3>
+                </div>
+                <app-youtube-fine-tuning [videoDuration]="selectedFile()?.duration || 0" [isExpanded]="isFineTuningExpanded()"
+                  [initialConfig]="getVideoFineTuningConfig()" (configChange)="onVideoConfigChange($event)">
+                </app-youtube-fine-tuning>
+              </div>
+
+              <div class="card-header">
+                <div class="header-left">
+                  <div class="header-title">
+                    <mat-icon class="card-icon">video_library</mat-icon>
+                    <h3 class="card-title">Video Input</h3>
+                  </div>
+
+                  <!-- Token Badge -->
+                  <div *ngIf="selectedFile()" [class.loading]="isLoadingTokens()">
+                    <!-- Show loading dots when loading tokens -->
+                    <ng-container *ngIf="isLoadingTokens()">
+                      <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </ng-container>
+          
+                    <!-- Show token count when we have tokens -->
+                    <ng-container *ngIf="!isLoadingTokens() && tokenCount()">
+                      <div class="token-badge" (click)="tooltipRewrite.toggle()">
+                        <span class="token-count">{{ tokenCount() | number }} tokens</span>
+                        <mat-icon class="info-icon" #tooltipRewrite="matTooltip"
+                          [matTooltip]="'This is an estimated token count for processing your video. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.'">info</mat-icon>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+                <div class="header-right">
+                  <!-- Fine-tuning Toggle -->
+                  <div class="tune-button-container">
+                    <button mat-icon-button class="fine-tuning-button" [class.active]="isFineTuningExpanded()"
+                      (click)="toggleFineTuning()" matTooltip="Fine-tune analysis" [disabled]="!selectedFile()">
+                      <mat-icon>tune</mat-icon>
+                    </button>
+                    <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+                  </div>
+                </div>
+              </div>
+        
+        <div class="input-content">
+          <!-- File Upload -->
+          <app-file-upload [acceptedTypes]="acceptedTypes" [multiple]="false"
+            [placeholder]="'Drag and drop a video file here or click to browse'" [fileType]="'video'"
+            (filesSelected)="onFilesSelected($event)" (fileRemoved)="onFileRemoved()" (error)="submitError.set($event)">
+          </app-file-upload>
+        
+          <!-- Error Message -->
+          <div *ngIf="submitError()" class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ submitError() }}</span>
+          </div>
+        
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" class="submit-button" [disabled]="!canSubmit()" (click)="onSubmit()">
+              <mat-icon>auto_awesome</mat-icon>
+              {{ isSubmitting() ? 'Summarising...' : 'Summarise' }}
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

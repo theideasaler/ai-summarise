@@ -1,0 +1,211 @@
+.projects-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100dvh;
+
+  .projects-header {
+    margin-bottom: 3rem;
+    text-align: center;
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--primary-text-color, #333);
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--secondary-text-color, #666);
+      margin: 0;
+    }
+  }
+
+  .projects-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+
+    .placeholder-card {
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+      mat-card-header {
+        justify-content: center;
+        margin-bottom: 1.5rem;
+
+        .mat-mdc-card-avatar {
+          background: var(--primary-color, #2196f3);
+          color: white;
+          font-size: 2rem;
+          width: 60px;
+          height: 60px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1rem;
+        }
+
+        mat-card-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+
+        mat-card-subtitle {
+          font-size: 1rem;
+          opacity: 0.7;
+        }
+      }
+
+      mat-card-content {
+        margin: 1.5rem 0;
+
+        p {
+          font-size: 1rem;
+          line-height: 1.6;
+          margin-bottom: 1rem;
+          color: var(--secondary-text-color, #666);
+        }
+
+        ul {
+          text-align: left;
+          max-width: 400px;
+          margin: 0 auto;
+          padding-left: 1.5rem;
+
+          li {
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+            color: var(--secondary-text-color, #666);
+
+            &::marker {
+              color: var(--primary-color, #2196f3);
+            }
+          }
+        }
+      }
+
+      mat-card-actions {
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+
+        button {
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 500;
+          text-transform: none;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          mat-icon {
+            font-size: 1.25rem;
+          }
+
+          &[color="primary"] {
+            background: var(--primary-color, #2196f3);
+            color: white;
+
+            &:disabled {
+              background: #ccc;
+              color: #999;
+            }
+          }
+
+          &:not([color]) {
+            color: var(--primary-color, #2196f3);
+            border: 1px solid var(--primary-color, #2196f3);
+
+            &:disabled {
+              color: #ccc;
+              border-color: #ccc;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Dark theme support
+  @media (prefers-color-scheme: dark) {
+    .projects-header {
+      h1 {
+        color: #ffffff;
+      }
+
+      .subtitle {
+        color: #b0b0b0;
+      }
+    }
+
+    .placeholder-card {
+      background: #1a1a1a;
+      color: #ffffff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+      mat-card-content {
+        p {
+          color: #b0b0b0;
+        }
+
+        ul li {
+          color: #b0b0b0;
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    .projects-header {
+      margin-bottom: 2rem;
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+      }
+    }
+
+    .projects-content {
+      .placeholder-card {
+        padding: 1.5rem;
+        margin: 0 1rem;
+
+        mat-card-header {
+          .mat-mdc-card-avatar {
+            width: 50px;
+            height: 50px;
+            font-size: 1.75rem;
+          }
+
+          mat-card-title {
+            font-size: 1.25rem;
+          }
+        }
+
+        mat-card-actions {
+          flex-direction: column;
+          align-items: stretch;
+
+          button {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      }
+    }
+  }
+}

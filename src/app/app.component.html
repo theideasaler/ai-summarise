@@ -1,20 +1,13 @@
 <div class="app-container">
   <!-- Loading State -->
-  <div *ngIf="isLoading$ | async" class="app-loading">
+  <div *ngIf="isLoading$ | async; else contentTemplate" class="app-loading">
     <div class="loading-content">
       <div class="loading-spinner"></div>
       <p>Loading...</p>
     </div>
   </div>
 
-  <!-- App Content -->
-  <div *ngIf="shouldShowContent$ | async">
-    <!-- Navigation Header -->
-    <app-header *ngIf="showHeader$ | async"></app-header>
-
-    <!-- Main Content -->
-    <main class="app-main">
-      <router-outlet></router-outlet>
-    </main>
-  </div>
+  <ng-template #contentTemplate>
+    <router-outlet></router-outlet>
+  </ng-template>
 </div>

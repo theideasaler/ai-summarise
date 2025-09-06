@@ -1,0 +1,131 @@
+<div class="webpage-summarise-container no-form-field-bottom-space">
+  <!-- Summary Result (match YouTube: show during loading) -->
+  <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
+    [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"
+    (clear)="onClearSummary()" (copy)="copySummary()">
+  </app-summary-result>
+
+  <!-- Rewrite Action Bar -->
+  <div class="rewrite-action-bar-container" *ngIf="summaryResult() && !isLoadingSummary()">
+    <app-rewrite-fine-tuning [isExpanded]="isRewriteFineTuningExpanded()"
+      [tokenCount]="summaryResult()?.tokensUsed || 0" (expandedChange)="onRewriteFineTuningExpandedChange($event)"
+      (rewriteSubmit)="onRewriteFineTuningSubmit($event)" (customPromptSaved)="onCustomPromptSaved($event)">
+    </app-rewrite-fine-tuning>
+  </div>
+
+  <!-- Rewritten Summary (match YouTube: show during loading; show dots) -->
+  <div class="rewritten-summary-container" *ngIf="rewrittenSummary() || isRewriteLoading()">
+    <app-rewritten-summary [rewrittenData]="getRewrittenSummaryData()" [isRewriting]="isRegeneratingRewrite()"
+      [isLoading]="isRewriteLoading() && !rewrittenSummary()" (rewriteAgain)="onRewriteAgain()"
+      (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+    </app-rewritten-summary>
+  </div>
+
+  <!-- Marketing Hero (when no summary) -->
+  <div class="marketing-hero" *ngIf="!summaryResult() && !isLoadingSummary()">
+    <div class="hero-content">
+      <h1 class="hero-title">Extract Insights from Any Webpage</h1>
+      <p class="hero-subtitle">
+        Transform web content into concise summaries with intelligent AI analysis and key information extraction
+      </p>
+      <div class="hero-features">
+        <div class="feature-item">
+          <mat-icon>language</mat-icon>
+          <span>Web Content Analysis</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>summarize</mat-icon>
+          <span>Instant Summaries</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>psychology</mat-icon>
+          <span>Smart Extraction</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-space" [style.height.px]="bottomSpaceHeight()"></div>
+  <!-- Fixed Bottom Section -->
+  <div class="fixed-bottom-section">
+    <!-- Input Card -->
+    <div class="input-card" #inputCard>
+      <!-- Fine-tuning Card (appears above input when toggled) -->
+      <div class="settings-card" *ngIf="isFineTuningExpanded() && isValidUrl()" [@slideInOut]>
+        <div class="card-header">
+          <mat-icon class="card-icon">tune</mat-icon>
+          <h3 class="card-title">Fine Tuning</h3>
+        </div>
+        <div class="fine-tuning-content">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Custom Summarisation Prompt</mat-label>
+            <textarea matInput [value]="customPrompt()" (input)="onCustomPromptChange($event)"
+              placeholder="Enter custom instructions for webpage analysis..." rows="3">
+                    </textarea>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="card-header">
+        <div class="header-left">
+          <mat-icon class="card-icon">public</mat-icon>
+          <h3 class="card-title">Webpage Input</h3>
+        </div>
+        <div class="header-right">
+          <!-- Token Badge -->
+          <div *ngIf="isValidUrl()" [class.loading]="isLoadingTokens()">
+            <!-- Show loading dots when loading tokens -->
+            <ng-container *ngIf="isLoadingTokens()">
+              <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </ng-container>
+
+            <!-- Show token count when we have tokens -->
+            <ng-container *ngIf="!isLoadingTokens() && tokenCount()">
+              <div class="token-badge" (click)="tooltipRewrite.toggle()">
+                <span class="token-count">{{ tokenCount() | number }} tokens</span>
+                <mat-icon class="info-icon" #tooltipRewrite="matTooltip"
+                  [matTooltip]="'This is an estimated token count for processing your webpage. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.'">info</mat-icon>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-container">
+        <mat-form-field appearance="outline" class="input-field">
+          <mat-label>Webpage URL</mat-label>
+          <input matInput [formControl]="urlControl" placeholder="https://example.com/article">
+          <mat-icon matSuffix *ngIf="isLoadingTokens() && urlControl.valid"
+            class="loading-icon">hourglass_empty</mat-icon>
+          <mat-icon matSuffix *ngIf="isValidUrl() && !isLoadingTokens()" class="success-icon">check_circle</mat-icon>
+          <mat-error *ngIf="urlControl.invalid && urlControl.touched">
+            {{ urlControl.hasError('required') ? 'URL is required' : 'Please enter a valid URL' }}
+          </mat-error>
+        </mat-form-field>
+        <div class="action-buttons">
+          <button mat-fab color="primary" class="submit-button" (click)="onSubmit()"
+            [disabled]="!canSubmit() || isSubmitting()" matTooltip="Summarise" matTooltipClass="consistent-tooltip">
+            <mat-icon>north</mat-icon>
+          </button>
+          <div class="tune-button-container">
+            <button mat-fab class="tune-button" (click)="toggleFineTuning()" [disabled]="!isValidUrl()"
+              [class.active]="isFineTuningExpanded()" matTooltip="Fine Tuning" matTooltipClass="consistent-tooltip">
+              <mat-icon>tune</mat-icon>
+            </button>
+            <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="submitError()" class="error-message">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ submitError() }}</span>
+      </div>
+    </div>
+  </div>
+</div>

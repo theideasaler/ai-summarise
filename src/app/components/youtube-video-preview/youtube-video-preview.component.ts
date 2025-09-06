@@ -145,7 +145,7 @@ export class YoutubeVideoPreviewComponent
         },
       });
     } catch (error) {
-      console.error('Error initializing YouTube player:', error);
+      this.logger.error('Error initializing YouTube player:', error);
     }
   }
 
@@ -171,7 +171,7 @@ export class YoutubeVideoPreviewComponent
       try {
         this.player.destroy();
       } catch (error) {
-        console.warn('Error disposing player:', error);
+        this.logger.warn('Error disposing player:', error);
       }
       this.player = null;
       this.playerDisposed = true;

@@ -1,0 +1,14 @@
+<div class="side-drawer-layout">
+  <!-- Main Content Area with Side Drawer -->
+  <div class="layout-content">
+    <!-- Mobile Drawer Toggle -->
+    <app-mobile-drawer-toggle></app-mobile-drawer-toggle>
+    <!-- Side Navigation -->
+    <app-side-drawer></app-side-drawer>
+
+    <!-- Main Content -->
+    <main class="main-content" [class]="mainContentClasses$ | async">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
