@@ -330,9 +330,6 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
         previousUrl = currentUrl;
 
         if (urlChanged) {
-          // Clear all results when URL actually changes
-          this._clearAllResults();
-
           // Reset fine-tuning config if collapsed
           if (!this.isFineTuningExpanded()) {
             this._resetFineTuningConfig();

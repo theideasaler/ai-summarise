@@ -161,6 +161,11 @@ export class AudioSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     const file = files[0];
     this.selectedFile.set(file);
     
+    // Reset fine-tuning if not expanded
+    if (!this.isFineTuningExpanded()) {
+      this.customPrompt.set('');
+    }
+    
     // Call API to get accurate token count
     this._fetchTokenCount(file);
   }
@@ -168,6 +173,11 @@ export class AudioSummariseComponent implements OnInit, OnDestroy, AfterViewInit
   onFileRemoved(): void {
     this.selectedFile.set(null);
     this.tokenCount.set(null);
+    
+    // Reset custom prompt if fine-tuning is collapsed
+    if (!this.isFineTuningExpanded()) {
+      this.customPrompt.set('');
+    }
   }
   
   onSubmit(): void {

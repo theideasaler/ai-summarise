@@ -231,6 +231,15 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     const file = files[0];
     this.selectedFile.set(file);
     
+    // Reset all fine-tuning if not expanded
+    if (!this.isFineTuningExpanded()) {
+      this.customPrompt.set('');
+      this.fpsControl.setValue(1);
+      this.useTimeRange.set(false);
+      this.startTime.set(0);
+      this.endTime.set(null);
+    }
+    
     // Set default end time to video duration
     if (file.duration) {
       this.endTime.set(file.duration);
@@ -247,6 +256,13 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     this.endTime.set(null);
     this.startTimeControl.setValue('00:00');
     this.endTimeControl.setValue('');
+    
+    // Reset all fine-tuning if not expanded
+    if (!this.isFineTuningExpanded()) {
+      this.customPrompt.set('');
+      this.fpsControl.setValue(1);
+      this.useTimeRange.set(false);
+    }
   }
   
   onSubmit(): void {

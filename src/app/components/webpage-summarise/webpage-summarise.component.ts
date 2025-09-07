@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -29,6 +29,52 @@ import {
 import { RewriteFineTuningComponent } from '../rewrite-fine-tuning/rewrite-fine-tuning.component';
 import { RewrittenSummaryComponent } from '../rewritten-summary/rewritten-summary.component';
 import { SummaryResultComponent } from '../summary-result/summary-result.component';
+
+function urlValidator(control: AbstractControl): ValidationErrors | null {
+  const raw = control.value?.trim();
+
+  // Empty is valid (handled by Validators.required separately)
+  if (!raw) return null;
+
+  // Reject protocol-relative URLs explicitly
+  if (raw.startsWith('//')) {
+    return { invalidUrl: 'Protocol-relative URLs are not supported' };
+  }
+
+  // Detect if input starts with a URL scheme (case-insensitive)
+  const schemeMatch = raw.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
+  const hasScheme = !!schemeMatch;
+  if (hasScheme) {
+    const scheme = schemeMatch![1].toLowerCase();
+    if (scheme !== 'http' && scheme !== 'https') {
+      return { invalidUrl: 'Only HTTP/HTTPS URLs are supported' };
+    }
+  }
+
+  try {
+    // Use provided value as-is when it already has http(s) scheme; otherwise, prefix https:// for validation
+    const urlToTest = hasScheme ? raw : `https://${raw}`;
+    const url = new URL(urlToTest);
+
+    // Double-check protocol (defensive)
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return { invalidUrl: 'Only HTTP/HTTPS URLs are supported' };
+    }
+
+    // Ensure hostname exists and looks like a public host (allow localhost and IPv6)
+    const hostname = url.hostname;
+    const isIPv6 = hostname.startsWith('[') && hostname.endsWith(']');
+    const isLocalhost = hostname.toLowerCase() === 'localhost';
+    const hasDot = hostname.includes('.');
+    if (!hostname || (!hasDot && !isLocalhost && !isIPv6)) {
+      return { invalidUrl: 'Please enter a valid hostname' };
+    }
+
+    return null;
+  } catch (_e) {
+    return { invalidUrl: 'Please enter a valid URL' };
+  }
+}
 
 @Component({
   selector: 'app-webpage-summarise',
@@ -74,9 +120,7 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
   // State Management
   readonly urlControl = new FormControl('', [
     Validators.required,
-    Validators.pattern(
-      /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
-    ),
+    urlValidator
   ]);
   readonly summaryResult = signal<SummariseResponse | null>(null);
   readonly rewrittenSummary = signal<SummariseResponse | null>(null);
@@ -181,6 +225,7 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   private _setupUrlListener(): void {
+    let previousUrl: string | null = null;
     this.urlControl.valueChanges
       .pipe(
         takeUntil(this.destroy$),
@@ -188,7 +233,15 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
         distinctUntilChanged(),
         filter(() => this.isValidUrl())
       )
-      .subscribe(() => {
+      .subscribe((currentUrl) => {
+        // Check if URL actually changed
+        if (currentUrl !== previousUrl) {
+          previousUrl = currentUrl;
+          // Reset fine-tuning if not expanded
+          if (!this.isFineTuningExpanded()) {
+            this.customPrompt.set('');
+          }
+        }
         this._countTokens();
       });
   }
@@ -199,13 +252,15 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
       return;
     }
 
-    const url = this.urlControl.value;
+    const url = this.urlControl.value?.trim();
     if (!url) return;
+
+    const normalizedUrl = this._normalizeUrl(url);
 
     this.isLoadingTokens.set(true);
 
     const request: WebpageSummariseRequest = {
-      url: url,
+      url: normalizedUrl,
       customPrompt: this.customPrompt() || undefined,
     };
 
@@ -233,8 +288,10 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
   onSubmit(): void {
     if (!this.canSubmit()) return;
 
-    const url = this.urlControl.value;
+    const url = this.urlControl.value?.trim();
     if (!url) return;
+
+    const normalizedUrl = this._normalizeUrl(url);
 
     this._clearErrors();
     // Reset cards to processing state like YouTube
@@ -246,11 +303,11 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
     this.isLoadingSummary.set(true);
 
     // Store original values for regeneration
-    this.originalUrl = url;
+    this.originalUrl = normalizedUrl;
     this.originalCustomPrompt = this.customPrompt() || null;
 
     const request: WebpageSummariseRequest = {
-      url: url,
+      url: normalizedUrl,
       customPrompt: this.customPrompt() || undefined,
     };
 
@@ -491,5 +548,10 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
     } catch (fallbackErr) {
       this.logger.error('Fallback copy failed:', fallbackErr);
     }
+  }
+
+  private _normalizeUrl(url: string): string {
+    const trimmed = url.trim();
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   }
 }

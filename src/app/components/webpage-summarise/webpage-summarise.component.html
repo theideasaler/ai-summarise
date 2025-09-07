@@ -103,7 +103,8 @@
             class="loading-icon">hourglass_empty</mat-icon>
           <mat-icon matSuffix *ngIf="isValidUrl() && !isLoadingTokens()" class="success-icon">check_circle</mat-icon>
           <mat-error *ngIf="urlControl.invalid && urlControl.touched">
-            {{ urlControl.hasError('required') ? 'URL is required' : 'Please enter a valid URL' }}
+            {{ urlControl.hasError('required') ? 'URL is required' : 
+               urlControl.errors?.['invalidUrl'] || 'Please enter a valid URL' }}
           </mat-error>
         </mat-form-field>
         <div class="action-buttons">

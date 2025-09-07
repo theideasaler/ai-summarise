@@ -208,15 +208,27 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
           this.isLoadingTokens.set(true);
           this.tokenCountError.set(null);
         } else {
+          // When text becomes empty, reset custom prompt if fine-tuning is collapsed
+          if (!this.isFineTuningExpanded()) {
+            this.customPrompt.set('');
+          }
           this.isLoadingTokens.set(false);
           this.tokenCount.set(null);
         }
       });
 
     // Debounced backend token counting (only for plain text, not files)
+    let previousText: string | null = null;
     this.textControl.valueChanges
       .pipe(debounceTime(600), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((text) => {
+        // Check if text actually changed and reset fine-tuning if not expanded
+        if (this.textControl.valid && text !== previousText) {
+          previousText = text;
+          if (!this.isFineTuningExpanded()) {
+            this.customPrompt.set('');
+          }
+        }
         // Only count tokens for plain text input, not for files
         if (text && text.length > 10 && !this.selectedFile()) {
           this._countTokens(text);
@@ -277,6 +289,11 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
     this.selectedFile.set(file);
     this.fileError.set(null);
     
+    // Reset fine-tuning if not expanded
+    if (!this.isFineTuningExpanded()) {
+      this.customPrompt.set('');
+    }
+    
     // Count tokens for the file
     this._countFileTokens(file.file);
   }
@@ -310,6 +327,18 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
     this.selectedFile.set(null);
     this.fileError.set(null);
     this.tokenCount.set(null);
+    
+    // Reset custom prompt if fine-tuning is collapsed
+    if (!this.isFineTuningExpanded()) {
+      this.customPrompt.set('');
+    }
+    
+    // Re-trigger token counting if there's text content
+    const text = this.textControl.value;
+    if (text && text.length > 10) {
+      this.isLoadingTokens.set(true);
+      this._countTokens(text);
+    }
   }
 
   onSubmit(): void {
