@@ -1,0 +1,203 @@
+<div class="project-detail-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading project details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!isLoading && error" class="error-container">
+    <mat-card>
+      <mat-card-content>
+        <div class="error-content">
+          <mat-icon color="warn">error_outline</mat-icon>
+          <h2>Unable to Load Project</h2>
+          <p>{{ error }}</p>
+          <button mat-raised-button color="primary" (click)="goBack()">
+            <mat-icon>arrow_back</mat-icon>
+            Back to Projects
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Project Content -->
+  <div *ngIf="!isLoading && !error && project" class="project-content">
+    <!-- Header -->
+    <div class="project-header">
+      <button mat-icon-button (click)="goBack()" matTooltip="Back to projects">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="header-content">
+        <div class="header-title">
+          <mat-icon class="content-type-icon">{{ getContentTypeIcon() }}</mat-icon>
+          <h1>{{ project.name }}</h1>
+        </div>
+        <div class="header-actions">
+          <button mat-raised-button color="accent" [matMenuTriggerFor]="exportMenu">
+            <mat-icon>download</mat-icon>
+            Export
+          </button>
+          <mat-menu #exportMenu="matMenu">
+            <button mat-menu-item (click)="exportAsMarkdown()">
+              <mat-icon>code</mat-icon>
+              <span>Export as Markdown</span>
+            </button>
+            <button mat-menu-item (click)="exportAsJSON()">
+              <mat-icon>data_object</mat-icon>
+              <span>Export as JSON</span>
+            </button>
+            <button mat-menu-item (click)="exportAsText()">
+              <mat-icon>text_snippet</mat-icon>
+              <span>Export as Plain Text</span>
+            </button>
+          </mat-menu>
+        </div>
+        <div class="header-meta">
+          <mat-chip-listbox aria-label="Project metadata">
+            <mat-chip-option [disableRipple]="true" [disabled]="true">
+              {{ getContentTypeLabel() }}
+            </mat-chip-option>
+            <mat-chip-option [disableRipple]="true" [disabled]="true">
+              Created: {{ formatDate(project.createdAt) }}
+            </mat-chip-option>
+            <mat-chip-option *ngIf="project.rewriteData" [disableRipple]="true" [disabled]="true" color="accent">
+              Has Rewrite
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Source Card -->
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>input</mat-icon>
+          Input Source
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="input-content">
+          <!-- URL Input (YouTube/Webpage) -->
+          <div *ngIf="isUrl()" class="url-input">
+            <p class="input-label">URL:</p>
+            <div class="input-value-container">
+              <code class="input-value">{{ getInputPreview() }}</code>
+              <button mat-icon-button 
+                      (click)="copyToClipboard(getInputPreview(), 'URL')"
+                      matTooltip="Copy URL">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Text Input -->
+          <div *ngIf="isTextContent()" class="text-input">
+            <p class="input-label">Text Preview:</p>
+            <div class="input-value-container">
+              <p class="input-value">{{ getInputPreview() }}</p>
+              <button mat-icon-button 
+                      (click)="copyToClipboard(project.name, 'Text')"
+                      matTooltip="Copy text">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- File Input (Image/Audio/Video) -->
+          <div *ngIf="isFileContent()" class="file-input">
+            <p class="input-label">File Name:</p>
+            <div class="input-value-container">
+              <span class="input-value">{{ project.name }}</span>
+            </div>
+          </div>
+
+          <div class="input-meta">
+            <small>Created: {{ formatDate(project.createdAt) }}</small>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Summary Result Card -->
+    <mat-card class="content-card" *ngIf="project.summaryData">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>summarize</mat-icon>
+          Summary Result
+        </mat-card-title>
+        <div class="card-actions">
+          <button mat-icon-button 
+                  (click)="copyToClipboard(project.summaryData.content, 'Summary')"
+                  matTooltip="Copy summary">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="summary-content">
+          <div class="summary-text" [innerHTML]="project.summaryData.content"></div>
+          <div class="summary-meta">
+            <span *ngIf="project.summaryData.tokensUsed" class="token-count">
+              <mat-icon>token</mat-icon>
+              {{ formatTokens(project.summaryData.tokensUsed) }}
+            </span>
+            <span class="summary-date">
+              Generated: {{ formatDate(project.summaryData.createdAt) }}
+            </span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Rewrite Result Card -->
+    <mat-card class="content-card" *ngIf="project.rewriteData">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>edit_note</mat-icon>
+          Rewrite Result
+        </mat-card-title>
+        <div class="card-actions">
+          <button mat-icon-button 
+                  (click)="copyToClipboard(project.rewriteData.content, 'Rewrite')"
+                  matTooltip="Copy rewrite">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="summary-content">
+          <div class="summary-text" [innerHTML]="project.rewriteData.content"></div>
+          <div class="summary-meta">
+            <span *ngIf="project.rewriteData.tokensUsed" class="token-count">
+              <mat-icon>token</mat-icon>
+              {{ formatTokens(project.rewriteData.tokensUsed) }}
+            </span>
+            <span class="summary-date">
+              Generated: {{ formatDate(project.rewriteData.createdAt) }}
+            </span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Regeneration Info -->
+    <mat-card class="info-card">
+      <mat-card-content>
+        <div class="info-content">
+          <mat-icon color="primary">info</mat-icon>
+          <div class="info-text">
+            <p><strong>Note:</strong> This is a read-only view of your project.</p>
+            <p>To regenerate or modify the summary, please visit the 
+              <a (click)="navigateToSummarisePage()" class="link-button">
+                original summarise page
+              </a>.
+            </p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

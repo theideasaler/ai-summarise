@@ -2,39 +2,198 @@
   <div class="projects-header">
     <h1>Projects</h1>
     <p class="subtitle">Manage your summarisation projects</p>
+    
+    <!-- SSE Connection Status -->
+    @if (isSSEConnecting()) {
+      <div class="sse-status connecting">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Connecting to real-time updates...</span>
+      </div>
+    }
+    @if (isSSEConnected()) {
+      <div class="sse-status connected">
+        <mat-icon>check_circle</mat-icon>
+        <span>Connected to real-time updates</span>
+      </div>
+    }
+    @if (connectionState() === 'failed') {
+      <div class="sse-status failed">
+        <mat-icon>error</mat-icon>
+        <span>Real-time updates unavailable</span>
+      </div>
+    }
   </div>
 
-  <div class="projects-content">
-    <mat-card class="placeholder-card">
-      <mat-card-header>
-        <mat-icon mat-card-avatar>folder</mat-icon>
-        <mat-card-title>Projects Coming Soon</mat-card-title>
-        <mat-card-subtitle>This feature is under development</mat-card-subtitle>
-      </mat-card-header>
-      
-      <mat-card-content>
-        <p>
-          The Projects section will allow you to:
-        </p>
-        <ul>
-          <li>Save and organise your summarisation results</li>
-          <li>Create project folders for different topics</li>
-          <li>Share projects with team members</li>
-          <li>Export summaries in various formats</li>
-          <li>Track your summarisation history</li>
-        </ul>
-      </mat-card-content>
-      
-      <mat-card-actions>
-        <button mat-raised-button color="primary" disabled>
-          <mat-icon>add</mat-icon>
-          Create Project
-        </button>
-        <button mat-button disabled>
-          <mat-icon>upload</mat-icon>
-          Import
-        </button>
-      </mat-card-actions>
-    </mat-card>
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Content Type</mat-label>
+      <mat-select [(ngModel)]="contentTypeFilter" (selectionChange)="onContentTypeChange()">
+        @for (type of contentTypes; track type.value) {
+          <mat-option [value]="type.value">{{ type.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search projects</mat-label>
+      <input matInput 
+             [(ngModel)]="searchQuery" 
+             (input)="onSearchChange($event)"
+             placeholder="Search by name...">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="sort-field">
+      <mat-label>Sort by</mat-label>
+      <mat-select [(ngModel)]="sortBy" (selectionChange)="onSortChange()">
+        @for (option of sortOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-icon-button 
+            (click)="onSortOrderToggle()" 
+            [matTooltip]="sortOrder === 'asc' ? 'Ascending' : 'Descending'"
+            class="sort-order-button">
+      <mat-icon>{{ sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+    </button>
   </div>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading projects...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error() && !isLoading()) {
+    <div class="error-container">
+      <mat-icon color="warn">error</mat-icon>
+      <p>{{ error() }}</p>
+      <button mat-raised-button color="primary" (click)="retryLoad()">
+        <mat-icon>refresh</mat-icon>
+        Retry
+      </button>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!isLoading() && !error() && projects().length === 0) {
+    <mat-card class="empty-state">
+      <mat-card-content>
+        <mat-icon>folder_open</mat-icon>
+        <h3>No projects found</h3>
+        @if (searchQuery || contentTypeFilter) {
+          <p>Try adjusting your filters or search terms</p>
+        } @else {
+          <p>Start by creating your first summarisation</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Projects List -->
+  @if (!isLoading() && projects().length > 0) {
+    <div class="projects-list">
+      <mat-list role="list" 
+                [attr.aria-label]="'Projects list, ' + projects().length + ' projects'"
+                [attr.aria-describedby]="'projects-list-description'">
+        <div id="projects-list-description" class="sr-only">
+          Use arrow keys to navigate, enter or space to view project details. Processing projects are not clickable.
+        </div>
+        @for (project of projects(); track project.id) {
+          <mat-list-item class="project-item" 
+                         [class.non-clickable]="!isProjectClickable(project)"
+                         [attr.aria-label]="getProjectAriaLabel(project)"
+                         [attr.tabindex]="isProjectClickable(project) ? 0 : -1"
+                         [attr.role]="'listitem'"
+                         (click)="onProjectClick($event, project)"
+                         (keydown.enter)="onProjectClick($event, project)"
+                         (keydown.space)="onProjectClick($event, project)">
+            <div matListItemAvatar class="project-icon">
+              <mat-icon [class]="'type-' + project.contentType">
+                {{ getContentTypeIcon(project.contentType) }}
+              </mat-icon>
+            </div>
+            
+            <div matListItemTitle class="project-title">
+              <span class="title-text">{{ project.name }}</span>
+              <!-- Status badge inline after title -->
+              @if (project.status) {
+                <span class="status-badge" 
+                      [ngClass]="getStatusBadgeClass(project)"
+                      [attr.aria-label]="getStatusAriaLabel(project)">
+                  @if (isProcessing(project)) {
+                    <mat-icon inline class="spinning-icon">sync</mat-icon>
+                  }
+                  @if (project.status === 'completed') {
+                    <mat-icon inline>check_circle</mat-icon>
+                  }
+                  @if (project.status === 'failed') {
+                    <mat-icon inline>error</mat-icon>
+                  }
+                  {{ getStatusBadgeText(project) }}
+                </span>
+              }
+            </div>
+            
+            <div matListItemLine class="project-meta">
+              <span class="created-date">
+                <mat-icon inline>schedule</mat-icon>
+                {{ formatDate(project.createdAt) }}
+              </span>
+              
+              @if (project.hasRewrite) {
+                <mat-chip class="rewrite-chip">
+                  <mat-icon inline>edit</mat-icon>
+                  Has rewrite
+                </mat-chip>
+              }
+            </div>
+            
+            
+            <button mat-icon-button 
+                    matListItemMeta
+                    class="delete-button"
+                    [class.disabled]="!isProjectDeletable(project)"
+                    [disabled]="!isProjectDeletable(project)"
+                    [attr.aria-label]="getDeleteAriaLabel(project)"
+                    (click)="deleteProject($event, project)"
+                    (keydown.enter)="deleteProject($event, project)"
+                    (keydown.space)="deleteProject($event, project)"
+                    [matTooltip]="getDeleteTooltip(project)"
+                    color="warn">
+              <mat-icon [attr.aria-hidden]="true">delete</mat-icon>
+            </button>
+          </mat-list-item>
+        }
+      </mat-list>
+
+      <!-- Load More Button -->
+      @if (hasMore()) {
+        <div class="load-more-container">
+          @if (isLoadingMore()) {
+            <mat-spinner diameter="30"></mat-spinner>
+          } @else {
+            <button mat-raised-button 
+                    color="primary" 
+                    (click)="loadMore()"
+                    class="load-more-button">
+              <mat-icon>expand_more</mat-icon>
+              Load More
+            </button>
+          }
+        </div>
+      }
+      
+      <!-- Results Count -->
+      <div class="results-info">
+        Showing {{ projects().length }} of {{ totalProjects }} projects
+      </div>
+    </div>
+  }
 </div>

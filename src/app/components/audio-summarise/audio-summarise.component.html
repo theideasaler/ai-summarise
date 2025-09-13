@@ -104,7 +104,7 @@
                       (click)="toggleFineTuning()" matTooltip="Fine-tune analysis" [disabled]="!selectedFile()">
                       <mat-icon>tune</mat-icon>
                     </button>
-                    <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+                    <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()" (click)="toggleFineTuning()"></div>
                   </div>
                 </div>
               </div>

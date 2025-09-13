@@ -46,7 +46,7 @@ export class SideDrawerComponent implements OnInit {
   isMobileScreen: boolean = false;
   private isMobileScreen$ = new BehaviorSubject<boolean>(false);
   // Token information
-  remainingTokens$: Observable<number>;
+  remainingTokens$: Observable<number | null>;
 
   // Computed observables for proper class management
   shouldShowOpenClass$: Observable<boolean>;
@@ -138,8 +138,7 @@ export class SideDrawerComponent implements OnInit {
         }
       });
 
-    // Initialize token service to fetch token info
-    this.tokenService.initialize();
+    // Token service will be initialized by components that need it
   }
 
   @HostListener('window:resize', ['$event'])

@@ -11,4 +11,18 @@ export const environment = {
     appId: '1:437396741747:web:2cb8f140def4dd68851406',
     measurementId: 'G-BZG6J92R1L',
   },
+  features: {
+    useSSETicketAuth: true, // Enable ticket-based SSE authentication
+  },
+  sse: {
+    maxReconnectAttempts: 5,
+    baseReconnectDelay: 1000, // 1 second
+    maxReconnectDelay: 30000, // 30 seconds
+    ticketLifetime: 30, // 30 seconds
+    ticketRefreshBuffer: 5, // refresh ticket 5 seconds before expiry
+    maxTicketRetryAttempts: 3,
+    ticketRetryDelay: 500, // 500ms between ticket request attempts
+    connectionTimeout: 10000, // 10 seconds
+    heartbeatInterval: 30000, // 30 seconds
+  },
 };

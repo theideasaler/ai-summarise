@@ -25,6 +25,7 @@ import {
   WebpageSummariseRequest,
   SummariseResponse,
   RewriteRequest,
+  ClientContext,
 } from '../../services/api.service';
 import { RewriteFineTuningComponent } from '../rewrite-fine-tuning/rewrite-fine-tuning.component';
 import { RewrittenSummaryComponent } from '../rewritten-summary/rewritten-summary.component';
@@ -133,6 +134,10 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
   readonly submitError = signal<string | null>(null);
   readonly tokenCount = signal<number | null>(null);
   readonly isLoadingTokens = signal(false);
+  
+  // Project tracking
+  readonly currentProjectId = signal<string | null>(null);
+  readonly existingProjectId = signal<string | null>(null);
 
   // Fine-tuning
   readonly isFineTuningExpanded = signal(false);
@@ -325,10 +330,22 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
 
     this._clearErrors();
     this.isRegenerating.set(true);
+    
+    // Store existing project ID for regeneration
+    if (this.currentProjectId()) {
+      this.existingProjectId.set(this.currentProjectId());
+    }
+    
+    // Build clientContext for regeneration
+    const clientContext: ClientContext | undefined = this.existingProjectId() ? {
+      intent: 'regenerate',
+      existingProjectId: this.existingProjectId()!
+    } : undefined;
 
     const request: WebpageSummariseRequest = {
       url: this.originalUrl,
       customPrompt: this.originalCustomPrompt || undefined,
+      clientContext: clientContext,
     };
 
     this.apiService
@@ -465,6 +482,12 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
     this.summaryResult.set(response);
     this.isSubmitting.set(false);
     this.isLoadingSummary.set(false);
+
+    // Store project ID if present
+    if (response.projectId) {
+      this.currentProjectId.set(response.projectId);
+      this.existingProjectId.set(response.projectId);
+    }
 
     // Refresh token info
     this.tokenService.fetchTokenInfo();

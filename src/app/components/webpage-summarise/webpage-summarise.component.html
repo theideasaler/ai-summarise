@@ -110,14 +110,15 @@
         <div class="action-buttons">
           <button mat-fab color="primary" class="submit-button" (click)="onSubmit()"
             [disabled]="!canSubmit() || isSubmitting()" matTooltip="Summarise" matTooltipClass="consistent-tooltip">
-            <mat-icon>north</mat-icon>
+            <mat-icon *ngIf="!isSubmitting()">north</mat-icon>
+            <mat-icon *ngIf="isSubmitting()" class="loading-icon">hourglass_empty</mat-icon>
           </button>
           <div class="tune-button-container">
             <button mat-fab class="tune-button" (click)="toggleFineTuning()" [disabled]="!isValidUrl()"
               [class.active]="isFineTuningExpanded()" matTooltip="Fine Tuning" matTooltipClass="consistent-tooltip">
               <mat-icon>tune</mat-icon>
             </button>
-            <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+            <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()" (click)="toggleFineTuning()"></div>
           </div>
         </div>
       </div>

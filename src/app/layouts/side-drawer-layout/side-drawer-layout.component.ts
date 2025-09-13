@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, Subject } from 'rxjs';
+import { map, takeUntil, filter } from 'rxjs/operators';
 import { MobileDrawerToggleComponent } from '../../components/mobile-drawer-toggle/mobile-drawer-toggle.component';
 import { SideDrawerComponent } from '../../components/side-drawer/side-drawer.component';
 import { DrawerService } from '../../services/drawer.service';
+import { AuthService } from '../../services/auth.service';
+import { TokenService } from '../../services/token.service';
 
 @Component({
   selector: 'app-side-drawer-layout',
@@ -18,16 +20,21 @@ import { DrawerService } from '../../services/drawer.service';
   templateUrl: './side-drawer-layout.component.html',
   styleUrl: './side-drawer-layout.component.scss',
 })
-export class SideDrawerLayoutComponent implements OnInit {
+export class SideDrawerLayoutComponent implements OnInit, OnDestroy {
   isDesktopDrawerCollapsed$: Observable<boolean>;
   isMobileDrawerOpen$: Observable<boolean>;
   isMobileScreen: boolean = false;
   private isMobileScreen$ = new BehaviorSubject<boolean>(false);
+  private destroy$ = new Subject<void>();
 
   // Computed observable for main content CSS classes
   mainContentClasses$: Observable<string>;
 
-  constructor(private drawerService: DrawerService) {
+  constructor(
+    private drawerService: DrawerService,
+    private authService: AuthService,
+    private tokenService: TokenService
+  ) {
     this.isDesktopDrawerCollapsed$ = this.drawerService.desktopDrawerCollapsed$;
     this.isMobileDrawerOpen$ = this.drawerService.mobileDrawerOpen$;
 
@@ -54,7 +61,21 @@ export class SideDrawerLayoutComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Component initialization if needed
+    // Initialize tokens when a user is authenticated
+    this.authService.currentUser$
+      .pipe(
+        filter(user => user !== null),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        // Initialize token service to fetch token info when user is authenticated
+        this.tokenService.initialize();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   @HostListener('window:resize', ['$event'])

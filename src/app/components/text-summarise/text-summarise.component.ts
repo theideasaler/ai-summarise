@@ -23,6 +23,7 @@ import {
   TextSummariseRequest,
   SummariseResponse,
   RewriteRequest,
+  ClientContext,
 } from '../../services/api.service';
 import { RewrittenSummaryComponent } from '../rewritten-summary/rewritten-summary.component';
 import { SummaryResultComponent } from '../summary-result/summary-result.component';
@@ -92,6 +93,10 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
   readonly tokenCount = signal<number | null>(null);
   readonly isLoadingTokens = signal(false);
   readonly tokenCountError = signal<string | null>(null);
+  
+  // Project tracking
+  readonly currentProjectId = signal<string | null>(null);
+  readonly existingProjectId = signal<string | null>(null);
 
   // Fine-tuning
   readonly isFineTuningExpanded = signal(false);
@@ -352,6 +357,9 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
     this.isRegeneratingRewrite.set(false);
     this.isSubmitting.set(true);
     this.isLoadingSummary.set(true);
+    
+    // Clear project ID for new submission
+    this.currentProjectId.set(null);
 
     if (this.displayMode() === 'file') {
       // Handle file upload
@@ -385,12 +393,23 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
 
     this._clearErrors();
     this.isRegenerating.set(true);
+    
+    // Store existing project ID for regeneration
+    if (this.currentProjectId()) {
+      this.existingProjectId.set(this.currentProjectId());
+    }
+    
+    // Build clientContext for regeneration
+    const clientContext: ClientContext | undefined = this.existingProjectId() ? {
+      intent: 'regenerate',
+      existingProjectId: this.existingProjectId()!
+    } : undefined;
 
     if (this.displayMode() === 'file') {
       // Handle file upload
       const file = this.selectedFile()!;
       this.apiService
-        .summariseTextFile(file.file, this.customPrompt() || undefined)
+        .summariseTextFile(file.file, this.customPrompt() || undefined, clientContext)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response) => {
@@ -407,6 +426,7 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
       const request: TextSummariseRequest = {
         content: this.textControl.value!,
         customPrompt: this.customPrompt() || undefined,
+        clientContext: clientContext,
       };
 
       this.apiService
@@ -605,6 +625,12 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
     this.summaryResult.set(response);
     this.isSubmitting.set(false);
     this.isLoadingSummary.set(false);
+    
+    // Store projectId if present
+    if (response.projectId) {
+      this.currentProjectId.set(response.projectId);
+      this.logger.log('Project created/updated:', response.projectId);
+    }
 
     // Refresh token info
     this.tokenService.fetchTokenInfo();

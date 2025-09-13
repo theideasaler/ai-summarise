@@ -136,6 +136,10 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly videoDuration = signal<number | null>(null);
   readonly tokenCount = signal<number | null>(null);
   readonly fineTuningConfig = signal<VideoFineTuningConfig | null>(null);
+  
+  // Project tracking signals
+  readonly currentProjectId = signal<string | null>(null);
+  readonly existingProjectId = signal<string | null>(null);
 
   // Store the original configs used for generating summaries
   private originalSummaryConfig: VideoFineTuningConfig | null = null;
@@ -238,7 +242,9 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
       
       // Set initial height after a tick to ensure rendered
       setTimeout(() => {
-        this.bottomSpaceHeight.set(this.inputCardRef.nativeElement.offsetHeight);
+        this.bottomSpaceHeight.set(
+          this.inputCardRef.nativeElement.offsetHeight
+        );
       }, 0);
     }
   }
@@ -712,6 +718,15 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
       this.originalSummaryConfig,
       this.originalSummaryUrl
     );
+    
+    // Add regeneration context if we have an existing project
+    const projectId = this.existingProjectId();
+    if (projectId) {
+      (request as any).clientContext = {
+        intent: 'regenerate' as const,
+        existingProjectId: projectId
+      };
+    }
 
     this.apiService
       .summariseYouTube(request)
@@ -735,6 +750,9 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
     // Clear stored original config
     this.originalSummaryConfig = null;
     this.originalSummaryUrl = null;
+    // Clear project tracking
+    this.currentProjectId.set(null);
+    this.existingProjectId.set(null);
   }
 
   copySummary(): void {
@@ -759,6 +777,9 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isLoadingSummary.set(true);
     this.rewrittenSummary.set(null);
     this.isRewriteLoading.set(false);
+    // Clear project tracking for new submission
+    this.currentProjectId.set(null);
+    this.existingProjectId.set(null);
   }
 
   private _handleSummarySuccess(response: SummariseResponse): void {
@@ -766,6 +787,12 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.summaryResult.set(response);
     this.isSubmitting.set(false);
     this.isLoadingSummary.set(false);
+    
+    // Store project ID if present
+    if (response.projectId) {
+      this.currentProjectId.set(response.projectId);
+      this.existingProjectId.set(response.projectId);
+    }
 
     // Refresh token info after successful API call
     this.tokenService.fetchTokenInfo();

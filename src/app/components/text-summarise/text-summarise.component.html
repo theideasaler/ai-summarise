@@ -105,7 +105,7 @@
               [disabled]="!textControl.valid && !selectedFile()">
               <mat-icon>tune</mat-icon>
             </button>
-            <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()"></div>
+            <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()" (click)="toggleFineTuning()"></div>
           </div>
         </div>
       </div>
@@ -137,7 +137,6 @@
               <p class="file-name">{{ selectedFile()?.name }}</p>
               <p class="file-meta">
                 <span>{{ selectedFile()?.size }}</span>
-                <span *ngIf="tokenCount()"> • {{ tokenCount()?.toLocaleString() }} tokens</span>
               </p>
             </div>
             <button mat-icon-button color="warn" (click)="onFileRemoved()">

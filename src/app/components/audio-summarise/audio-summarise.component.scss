@@ -84,12 +84,16 @@
 .rewrite-action-bar-container {
   width: 100%;
   max-width: 960px;
-  margin: 0 auto 2rem auto;
+  margin: 1rem auto 2rem auto;
   box-sizing: border-box;
 }
 
 .bottom-space {
   height: 250px;
+}
+
+.card-header {
+  padding: 0rem 1.5rem;
 }
 
 // Audio Upload Container

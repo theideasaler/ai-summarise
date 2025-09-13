@@ -29,6 +29,10 @@ export class TokenService {
   private _tokenInfo = new BehaviorSubject<TokenInfo | null>(null);
   private _isLoading = signal<boolean>(false);
   private _error = signal<string | null>(null);
+  private _isInitialized = false;
+  private _initializationPromise: Promise<void> | null = null;
+  private _lastFetchTime = 0;
+  private _currentFetchPromise: Promise<TokenInfo | null> | null = null;
 
   // Public observables
   tokenInfo$ = this._tokenInfo.asObservable();
@@ -36,7 +40,7 @@ export class TokenService {
   error = this._error.asReadonly();
 
   // Computed signals for easy access
-  remainingTokens = signal<number>(0);
+  remainingTokens = signal<number | null>(null);
   subscriptionTier = signal<'free' | 'pro' | 'premium'>('free');
 
   constructor(
@@ -55,8 +59,40 @@ export class TokenService {
 
   /**
    * Fetch current token information from the backend
+   * Includes debouncing to prevent duplicate rapid calls
    */
   async fetchTokenInfo(): Promise<TokenInfo | null> {
+    const now = Date.now();
+    const DEBOUNCE_TIME = 2000; // 2 seconds debounce
+
+    // Return existing promise if a fetch is already in progress
+    if (this._currentFetchPromise) {
+      this.logger.log('TokenService: Returning existing fetch promise');
+      return this._currentFetchPromise;
+    }
+
+    // If called within debounce time, return cached data
+    if (now - this._lastFetchTime < DEBOUNCE_TIME) {
+      this.logger.log('TokenService: Fetch called too soon, returning cached data');
+      return this._tokenInfo.value;
+    }
+
+    // Perform actual fetch
+    this._currentFetchPromise = this._performTokenFetch();
+    
+    try {
+      const result = await this._currentFetchPromise;
+      this._lastFetchTime = now;
+      return result;
+    } finally {
+      this._currentFetchPromise = null;
+    }
+  }
+
+  /**
+   * Internal method to perform the actual token fetch
+   */
+  private async _performTokenFetch(): Promise<TokenInfo | null> {
     try {
       this._isLoading.set(true);
       this._error.set(null);
@@ -129,10 +165,38 @@ export class TokenService {
 
   /**
    * Initialize token service (call this when user logs in)
+   * Prevents duplicate initialization calls
    */
   async initialize(): Promise<void> {
+    // Return existing initialization promise if already initializing
+    if (this._initializationPromise) {
+      return this._initializationPromise;
+    }
+
+    // Return immediately if already initialized
+    if (this._isInitialized) {
+      return;
+    }
+
+    // Create and store the initialization promise
+    this._initializationPromise = this._performInitialization();
+    
+    try {
+      await this._initializationPromise;
+    } finally {
+      // Clear the promise after completion (success or failure)
+      this._initializationPromise = null;
+    }
+  }
+
+  /**
+   * Internal method to perform the actual initialization
+   */
+  private async _performInitialization(): Promise<void> {
     if (this.authService.isAuthenticated()) {
       await this.fetchTokenInfo();
+      this._isInitialized = true;
+      this.logger.log('TokenService initialized successfully');
     }
   }
 
@@ -141,8 +205,12 @@ export class TokenService {
    */
   clear(): void {
     this._tokenInfo.next(null);
-    this.remainingTokens.set(0);
+    this.remainingTokens.set(null);
     this.subscriptionTier.set('free');
     this._error.set(null);
+    this._isInitialized = false;
+    this._initializationPromise = null;
+    this._lastFetchTime = 0;
+    this._currentFetchPromise = null;
   }
 }

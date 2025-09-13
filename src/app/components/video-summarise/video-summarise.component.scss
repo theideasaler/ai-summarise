@@ -1,5 +1,5 @@
 // Use shared media styles
-@use '../shared/media-summarise.scss' as media;
+@use "../shared/media-summarise.scss" as media;
 
 // Container (align with YouTube container)
 .video-summarise-container {
@@ -12,6 +12,10 @@
 
 .bottom-space {
   height: 250px;
+}
+
+.card-header {
+  padding: 0rem 1.5rem;
 }
 
 // Fixed bottom section and cards (non-overlapping, 5px gap)
@@ -27,8 +31,14 @@
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  > * { pointer-events: auto; }
-  @media (max-width: 768px) { left: 0; right: 0; padding: 0 1rem 1rem; }
+  > * {
+    pointer-events: auto;
+  }
+  @media (max-width: 768px) {
+    left: 0;
+    right: 0;
+    padding: 0 1rem 1rem;
+  }
 }
 
 .input-card {
@@ -70,7 +80,7 @@
 .rewrite-action-bar-container {
   width: 100%;
   max-width: 960px;
-  margin: 0 auto 2rem auto;
+  margin: 1rem auto 2rem auto;
   box-sizing: border-box;
 }
 
@@ -151,7 +161,7 @@
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-  
+
   .header-title {
     display: flex;
     align-items: center;

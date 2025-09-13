@@ -27,6 +27,7 @@ import {
   VideoSummariseRequest,
   SummariseResponse,
   RewriteRequest,
+  ClientContext,
 } from '../../services/api.service';
 import { RewriteFineTuningComponent } from '../rewrite-fine-tuning/rewrite-fine-tuning.component';
 import { RewrittenSummaryComponent } from '../rewritten-summary/rewritten-summary.component';
@@ -95,6 +96,10 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
   readonly fileError = signal<string | null>(null);
   readonly tokenCount = signal<number | null>(null);
   readonly isLoadingTokens = signal(false);
+  
+  // Project tracking
+  readonly currentProjectId = signal<string | null>(null);
+  readonly existingProjectId = signal<string | null>(null);
   
   // Fine-tuning
   readonly isFineTuningExpanded = signal(false);
@@ -321,9 +326,16 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
       customPrompt: this.customPrompt() || undefined,
     };
     
+    // Build clientContext for regeneration
+    const clientContext: ClientContext | undefined = this.existingProjectId() ? {
+      intent: 'regenerate',
+      existingProjectId: this.existingProjectId()!
+    } : undefined;
+    
     const request: VideoSummariseRequest = {
       file: file.file,
       ...config,
+      clientContext: clientContext,
     };
     
     this.apiService.summariseVideo(request)
@@ -581,6 +593,12 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     this.summaryResult.set(response);
     this.isSubmitting.set(false);
     this.isLoadingSummary.set(false);
+    
+    // Store project ID if present
+    if (response.projectId) {
+      this.currentProjectId.set(response.projectId);
+      this.existingProjectId.set(response.projectId);
+    }
     
     // Refresh token info
     this.tokenService.fetchTokenInfo();
