@@ -31,6 +31,11 @@ import type {
 import { LoggerService } from '../../services/logger.service';
 import { TokenService } from '../../services/token.service';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
+import {
+  getContentTypeMetadata as resolveContentTypeMetadata,
+  ContentTypeUIMetadata,
+} from '../../models/content-type-ui.config';
 
 @Component({
   selector: 'app-projects',
@@ -49,6 +54,7 @@ import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.compone
     MatInputModule,
     MatDialogModule,
     MatTooltipModule,
+    TokenBadgeComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -427,16 +433,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       });
   }
 
-  getContentTypeIcon(contentType: string): string {
-    const icons: Record<string, string> = {
-      text: 'description',
-      image: 'image',
-      audio: 'audiotrack',
-      video: 'videocam',
-      youtube: 'smart_display',
-      webpage: 'language',
-    };
-    return icons[contentType] || 'folder';
+  getContentTypeMetadata(
+    contentType: string | null | undefined
+  ): ContentTypeUIMetadata {
+    return resolveContentTypeMetadata(contentType);
   }
 
   formatDate(dateString: string): string {
@@ -448,6 +448,67 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  
+
+  /**
+   * Determine whether to show the token badge for a project.
+   */
+  shouldShowTokenBadge(project: ProjectSummary): boolean {
+    return (
+      (project.status === 'completed' && !!project.tokensUsed) ||
+      (project.status === 'processing' && !!project.tokensReserved)
+    );
+  }
+
+  /**
+   * Format project creation date using locale-aware rules:
+   * - < 24h: show exact local time (HH:MM respecting 12/24 hour setting)
+   * - 1-7 days: show localized weekday name
+   * - > 7 days: show localized short date (day, short month, year)
+   */
+  formatRelativeTime(dateString: string): string {
+    const targetDate = new Date(dateString);
+    if (Number.isNaN(targetDate.getTime())) {
+      return '';
+    }
+
+    const now = new Date();
+    const diffMs = now.getTime() - targetDate.getTime();
+
+    if (diffMs < 0) {
+      // Future timestamps should still render meaningfully using full date + time
+      return new Intl.DateTimeFormat(undefined, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(targetDate);
+    }
+
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const oneWeekMs = 7 * oneDayMs;
+
+    if (diffMs < oneDayMs) {
+      return new Intl.DateTimeFormat(undefined, {
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(targetDate);
+    }
+
+    if (diffMs <= oneWeekMs) {
+      return new Intl.DateTimeFormat(undefined, {
+        weekday: 'long'
+      }).format(targetDate);
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(targetDate);
   }
 
   retryLoad(): void {
@@ -568,6 +629,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     project.status = 'processing';
     project.lastEventAt = new Date().toISOString();
     
+    // Set reserved tokens from SSE data if available
+    if (event.data?.tokensReserved) {
+      project.tokensReserved = event.data.tokensReserved;
+      this.logger.log(`Project ${project.name} reserving ${event.data.tokensReserved} tokens`);
+    }
+    
     this.logger.log(`Project ${project.name} (requestId: ${requestId}) status: processing`);
 
     // Update the project in the array
@@ -605,6 +672,13 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     // Update to completed status
     project.status = 'completed';
     project.lastEventAt = new Date().toISOString();
+    
+    // Set actual tokens used and remove reserved tokens
+    if (event.data?.tokensUsed) {
+      project.tokensUsed = event.data.tokensUsed;
+      delete project.tokensReserved; // Remove reserved tokens on completion
+      this.logger.log(`Project ${project.name} consumed ${event.data.tokensUsed} tokens`);
+    }
     
     this.logger.log(`Project ${project.name} (requestId: ${requestId}) completed`);
 

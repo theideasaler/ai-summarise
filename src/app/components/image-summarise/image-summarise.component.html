@@ -87,14 +87,13 @@
                       </div>
                     </ng-container>
           
-                    <!-- Show token count when we have tokens -->
-                    <ng-container *ngIf="!isLoadingTokens() && tokenCount()">
-                      <div class="token-badge" (click)="tooltipImage.toggle()">
-                        <span class="token-count">{{ tokenCount() | number }} tokens</span>
-                        <mat-icon class="info-icon" #tooltipImage="matTooltip"
-                          [matTooltip]="'This is an estimated token count for processing your image. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.'">info</mat-icon>
-                      </div>
-                    </ng-container>
+                    <!-- Show token badge when we have tokens -->
+                    <app-token-badge
+                      *ngIf="!isLoadingTokens() && tokenCount()"
+                      [tokensCount]="tokenCount()"
+                      [isEstimation]="true"
+                      tooltip="This is an estimated token count for processing your image. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.">
+                    </app-token-badge>
                   </div>
                 </div>
                 <div class="header-right">

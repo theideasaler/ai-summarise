@@ -74,7 +74,7 @@
       <div class="card-header">
         <div class="header-left">
           <mat-icon class="card-icon">play_circle</mat-icon>
-          <h3 class="card-title">Video Input</h3>
+          <h3 class="card-title">YouTube</h3>
         </div>
         <div class="header-right">
           <!-- Token Badge -->
@@ -88,14 +88,13 @@
               </div>
             </ng-container>
 
-            <!-- Show token count when we have duration and tokens -->
-            <ng-container *ngIf="!isLoadingTokens() && videoDuration() && videoDuration()! > 0 && tokenCount()">
-              <div class="token-badge" (click)="tooltipRewrite.toggle()">
-                <span class="token-count">{{ tokenCount() | number }} tokens</span>
-                <mat-icon class="info-icon" #tooltipRewrite="matTooltip"
-                  [matTooltip]="'This is an estimated token count for processing your video. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.'">info</mat-icon>
-              </div>
-            </ng-container>
+            <!-- Show token badge when we have duration and tokens -->
+            <app-token-badge
+              *ngIf="!isLoadingTokens() && videoDuration() && videoDuration()! > 0 && tokenCount()"
+              [tokensCount]="tokenCount()"
+              [isEstimation]="true"
+              tooltip="This is an estimated token count for processing your video. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.">
+            </app-token-badge>
             <!-- Show token counting error if any -->
             <ng-container *ngIf="!isLoadingTokens() && tokenCountError()">
               <div class="token-error" [matTooltip]="tokenCountError()">

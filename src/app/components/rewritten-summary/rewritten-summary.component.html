@@ -30,7 +30,7 @@
         <mat-icon class="card-icon">article</mat-icon>
         <h3>Recreation</h3>
         <div class="rewritten-summary-badges">
-          <span class="badge tokens-badge">{{ rewrittenData.tokensUsed | number}} tokens</span>
+          <app-token-badge [tokensCount]="rewrittenData.tokensUsed || 0" [isEstimation]="false"></app-token-badge>
           <span class="badge time-badge">{{ rewrittenData.processingTime | number}}ms</span>
         </div>
       </div>

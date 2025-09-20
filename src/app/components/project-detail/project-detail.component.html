@@ -85,10 +85,12 @@
             <p class="input-label">URL:</p>
             <div class="input-value-container">
               <code class="input-value">{{ getInputPreview() }}</code>
-              <button mat-icon-button 
-                      (click)="copyToClipboard(getInputPreview(), 'URL')"
-                      matTooltip="Copy URL">
+              <button mat-raised-button color="primary"
+                      (click)="copyToClipboard(getInputPreview(), 'URL', 'url')"
+                      matTooltip="Copy URL"
+                      class="copy-button">
                 <mat-icon>content_copy</mat-icon>
+                {{ copyButtonStates.url() }}
               </button>
             </div>
           </div>
@@ -98,10 +100,12 @@
             <p class="input-label">Text Preview:</p>
             <div class="input-value-container">
               <p class="input-value">{{ getInputPreview() }}</p>
-              <button mat-icon-button 
-                      (click)="copyToClipboard(project.name, 'Text')"
-                      matTooltip="Copy text">
+              <button mat-raised-button color="primary"
+                      (click)="copyToClipboard(project.name, 'Text', 'url')"
+                      matTooltip="Copy text"
+                      class="copy-button">
                 <mat-icon>content_copy</mat-icon>
+                {{ copyButtonStates.url() }}
               </button>
             </div>
           </div>
@@ -129,10 +133,12 @@
           Summary Result
         </mat-card-title>
         <div class="card-actions">
-          <button mat-icon-button 
-                  (click)="copyToClipboard(project.summaryData.content, 'Summary')"
-                  matTooltip="Copy summary">
+          <button mat-raised-button color="primary"
+                  (click)="copyToClipboard(project.summaryData.content, 'Summary', 'summary')"
+                  matTooltip="Copy summary"
+                  class="copy-button">
             <mat-icon>content_copy</mat-icon>
+            {{ copyButtonStates.summary() }}
           </button>
         </div>
       </mat-card-header>
@@ -140,10 +146,11 @@
         <div class="summary-content">
           <div class="summary-text" [innerHTML]="project.summaryData.content"></div>
           <div class="summary-meta">
-            <span *ngIf="project.summaryData.tokensUsed" class="token-count">
-              <mat-icon>token</mat-icon>
-              {{ formatTokens(project.summaryData.tokensUsed) }}
-            </span>
+            <app-token-badge
+              *ngIf="project.summaryData.tokensUsed"
+              [tokensCount]="project.summaryData.tokensUsed"
+              [isEstimation]="false">
+            </app-token-badge>
             <span class="summary-date">
               Generated: {{ formatDate(project.summaryData.createdAt) }}
             </span>
@@ -160,10 +167,12 @@
           Rewrite Result
         </mat-card-title>
         <div class="card-actions">
-          <button mat-icon-button 
-                  (click)="copyToClipboard(project.rewriteData.content, 'Rewrite')"
-                  matTooltip="Copy rewrite">
+          <button mat-raised-button color="primary"
+                  (click)="copyToClipboard(project.rewriteData.content, 'Rewrite', 'rewrite')"
+                  matTooltip="Copy rewrite"
+                  class="copy-button">
             <mat-icon>content_copy</mat-icon>
+            {{ copyButtonStates.rewrite() }}
           </button>
         </div>
       </mat-card-header>
@@ -171,10 +180,11 @@
         <div class="summary-content">
           <div class="summary-text" [innerHTML]="project.rewriteData.content"></div>
           <div class="summary-meta">
-            <span *ngIf="project.rewriteData.tokensUsed" class="token-count">
-              <mat-icon>token</mat-icon>
-              {{ formatTokens(project.rewriteData.tokensUsed) }}
-            </span>
+            <app-token-badge
+              *ngIf="project.rewriteData.tokensUsed"
+              [tokensCount]="project.rewriteData.tokensUsed"
+              [isEstimation]="false">
+            </app-token-badge>
             <span class="summary-date">
               Generated: {{ formatDate(project.rewriteData.createdAt) }}
             </span>

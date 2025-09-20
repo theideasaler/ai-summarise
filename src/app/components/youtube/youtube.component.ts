@@ -1,5 +1,5 @@
 import { animate, style, transition, trigger } from '@angular/animations';
-import { DecimalPipe, NgIf } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectorRef,
@@ -48,6 +48,7 @@ import { SummaryResultComponent } from '../summary-result/summary-result.compone
 import { YoutubeFineTuningComponent } from '../youtube-fine-tuning/youtube-fine-tuning.component';
 import { YoutubeVideoPreviewComponent } from '../youtube-video-preview/youtube-video-preview.component';
 import { TokenService } from '../../services/token.service';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 // ============================================================================
 // Constants and Configuration
@@ -82,12 +83,12 @@ const ERROR_MESSAGES = {
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    DecimalPipe,
     SummaryResultComponent,
     YoutubeVideoPreviewComponent,
     YoutubeFineTuningComponent,
     MultilineInputComponent,
     MatTooltipModule,
+    TokenBadgeComponent,
     RewriteFineTuningComponent,
     RewrittenSummaryComponent,
   ],
@@ -136,7 +137,7 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly videoDuration = signal<number | null>(null);
   readonly tokenCount = signal<number | null>(null);
   readonly fineTuningConfig = signal<VideoFineTuningConfig | null>(null);
-  
+
   // Project tracking signals
   readonly currentProjectId = signal<string | null>(null);
   readonly existingProjectId = signal<string | null>(null);
@@ -205,7 +206,7 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
     new Subject<VideoFineTuningConfig | null>();
   private readonly durationChangesSubject = new Subject<void>();
   private persistentFineTuningConfig: VideoFineTuningConfig | null = null;
-  
+
   // ViewChild and ResizeObserver for dynamic bottom space
   @ViewChild('inputCard') inputCardRef!: ElementRef<HTMLElement>;
   private resizeObserver?: ResizeObserver;
@@ -235,11 +236,11 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
         this.bottomSpaceHeight.set(entry.target.clientHeight);
       }
     });
-    
+
     // Start observing the input card
     if (this.inputCardRef?.nativeElement) {
       this.resizeObserver.observe(this.inputCardRef.nativeElement);
-      
+
       // Set initial height after a tick to ensure rendered
       setTimeout(() => {
         this.bottomSpaceHeight.set(
@@ -718,13 +719,13 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
       this.originalSummaryConfig,
       this.originalSummaryUrl
     );
-    
+
     // Add regeneration context if we have an existing project
     const projectId = this.existingProjectId();
     if (projectId) {
       (request as any).clientContext = {
         intent: 'regenerate' as const,
-        existingProjectId: projectId
+        existingProjectId: projectId,
       };
     }
 
@@ -787,7 +788,7 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.summaryResult.set(response);
     this.isSubmitting.set(false);
     this.isLoadingSummary.set(false);
-    
+
     // Store project ID if present
     if (response.projectId) {
       this.currentProjectId.set(response.projectId);
@@ -978,12 +979,19 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
   // ============================================================================
   private _copyToClipboard(text: string): void {
     try {
-      if (typeof navigator !== 'undefined' && (navigator as any).clipboard?.writeText) {
-        (navigator as any).clipboard.writeText(text)
+      if (
+        typeof navigator !== 'undefined' &&
+        (navigator as any).clipboard?.writeText
+      ) {
+        (navigator as any).clipboard
+          .writeText(text)
           .then(() => {
             this.logger.log('Content copied to clipboard');
             this.copyButtonText.set('Copied!');
-            setTimeout(() => this.copyButtonText.set('Copy'), CLIPBOARD_FEEDBACK_DURATION_MS);
+            setTimeout(
+              () => this.copyButtonText.set('Copy'),
+              CLIPBOARD_FEEDBACK_DURATION_MS
+            );
           })
           .catch((err: any) => {
             this.logger.warn('Clipboard API failed, falling back:', err);
@@ -1000,14 +1008,33 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private _fallbackCopy(text: string): void {
     try {
-      if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
-        window.prompt('Copy to clipboard (Ctrl/Cmd+C), then press Enter:', text);
-        this.logger.log('Copy to clipboard prompt shown (fallback)');
-      } else {
-        this.logger.warn('No clipboard API or prompt available for fallback');
+      // Create a textarea element for copying
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          this.logger.log('Content copied using fallback method');
+          this.copyButtonText.set('Copied!');
+          setTimeout(() => this.copyButtonText.set('Copy'), 2000);
+        } else {
+          this.logger.warn('Fallback copy failed');
+          // Silently fail - user can still use Ctrl/Cmd+C manually
+        }
+      } catch (err) {
+        this.logger.error('execCommand copy failed:', err);
       }
+
+      document.body.removeChild(textarea);
     } catch (fallbackErr) {
-      this.logger.error('Fallback copy failed:', fallbackErr);
+      this.logger.error('Fallback copy error:', fallbackErr);
     }
   }
 }

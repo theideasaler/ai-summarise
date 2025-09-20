@@ -3,11 +3,11 @@
   <div class="rewrite-card">
     <mat-icon class="rewrite-icon">edit</mat-icon>
     <span class="rewrite-text">Recreate</span>
-    <div class="token-badge-summary" (click)="tooltip.toggle()">
-      <span class="token-count">{{ getTotalTokens() | number}} tokens</span>
-      <mat-icon #tooltip="matTooltip" class="info-icon" 
-        matTooltip="Estimated token usage - actual consumption may vary depending on the complexity of your request">info</mat-icon>
-    </div>
+    <app-token-badge
+      [tokensCount]="getTotalTokens()"
+      [isEstimation]="true"
+      tooltip="Estimated token usage - actual consumption may vary depending on the complexity of your request">
+    </app-token-badge>
     <div class="spacer"></div>
     <button mat-icon-button class="send-button" 
       (click)="onSubmit()" 

@@ -1,0 +1,225 @@
+.account-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+// Loading Overlay
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 100;
+  gap: 1rem;
+
+  span {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+}
+
+// Account Header
+.account-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+}
+
+// Account Content
+.account-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+// Info Cards
+.info-card {
+  mat-card-header {
+    margin-bottom: 1rem;
+
+    mat-icon[mat-card-avatar] {
+      width: 40px;
+      height: 40px;
+      font-size: 40px;
+      color: #3f51b5;
+      margin-right: 1rem;
+    }
+
+    mat-card-title {
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+  }
+
+  mat-card-content {
+    padding: 0 1rem;
+  }
+}
+
+// Info Rows
+.info-row {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  gap: 1rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 150px;
+  }
+
+  .info-value {
+    color: #1a1a1a;
+    flex: 1;
+  }
+
+  &.warning-text {
+    .info-label {
+      color: #ff9800;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      mat-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+      }
+    }
+  }
+
+  mat-chip {
+    font-size: 0.875rem;
+  }
+}
+
+// Section Divider
+.section-divider {
+  margin: 1.5rem 0;
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 1rem;
+
+  button {
+    mat-spinner {
+      margin-right: 0.5rem;
+      display: inline-block;
+    }
+
+    mat-icon {
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+}
+
+// No Subscription
+.no-subscription {
+  text-align: center;
+  padding: 2rem;
+
+  p {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+  }
+
+  button {
+    mat-icon {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Usage Bar
+.usage-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1rem 0;
+
+  .usage-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #3f51b5, #5c6bc0);
+    transition: width 0.3s ease;
+  }
+}
+
+// Usage Note
+.usage-note {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .account-container {
+    padding: 1rem;
+  }
+
+  .account-header {
+    .page-title {
+      font-size: 1.5rem;
+    }
+
+    .page-subtitle {
+      font-size: 0.875rem;
+    }
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .info-label {
+      min-width: auto;
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  .action-buttons {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+}

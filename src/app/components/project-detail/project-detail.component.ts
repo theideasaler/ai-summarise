@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -8,12 +8,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProjectResponse } from '../../services/api.service';
 import { LoggerService } from '../../services/logger.service';
 import { ProjectService } from '../../services/project.service';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 @Component({
   selector: 'app-project-detail',
@@ -28,6 +30,8 @@ import { ProjectService } from '../../services/project.service';
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatMenuModule,
+    MatSnackBarModule,
+    TokenBadgeComponent,
   ],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.scss',
@@ -36,14 +40,22 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   project: ProjectResponse | null = null;
   isLoading = true;
   error: string | null = null;
-  
+
+  // Copy button states
+  copyButtonStates = {
+    summary: signal<string>('Copy'),
+    rewrite: signal<string>('Copy'),
+    url: signal<string>('Copy')
+  };
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private projectService: ProjectService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -144,10 +156,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  formatTokens(tokens?: number): string {
-    if (tokens === undefined || tokens === null) return '';
-    return tokens.toLocaleString('en-GB') + ' tokens';
-  }
+
 
   getInputPreview(): string {
     if (!this.project) return '';
@@ -188,17 +197,89 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     return contentType === 'image' || contentType === 'audio' || contentType === 'video';
   }
 
-  copyToClipboard(text: string, label: string = 'Content'): void {
-    navigator.clipboard.writeText(text).then(
-      () => {
-        this.logger.log(`${label} copied to clipboard`);
-        // Could add a snackbar notification here if needed
-      },
-      (err) => {
-        this.logger.error('Failed to copy to clipboard:', err);
-        // Could add a snackbar notification here if needed
+  copyToClipboard(text: string, label: string = 'Content', buttonType?: 'summary' | 'rewrite' | 'url'): void {
+    // Check for empty content
+    if (!text) {
+      this.snackBar.open('No content to copy', 'Close', {
+        duration: 2000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      });
+      return;
+    }
+
+    // Strip HTML from the content
+    const plainText = this._stripHtml(text);
+
+    // Try modern clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(plainText).then(
+        () => {
+          this.logger.log(`${label} copied to clipboard`);
+          this.snackBar.open(`${label} copied to clipboard`, 'Close', {
+            duration: 2000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
+
+          // Update button text if buttonType is provided
+          if (buttonType && this.copyButtonStates[buttonType]) {
+            this.copyButtonStates[buttonType].set('Copied');
+            setTimeout(() => {
+              this.copyButtonStates[buttonType].set('Copy');
+            }, 2000);
+          }
+        },
+        (err) => {
+          this.logger.error('Failed to copy to clipboard:', err);
+          this._fallbackCopy(plainText, label, buttonType);
+        }
+      );
+    } else {
+      // Fallback for older browsers
+      this._fallbackCopy(plainText, label, buttonType);
+    }
+  }
+
+  private _fallbackCopy(text: string, label: string, buttonType?: 'summary' | 'rewrite' | 'url'): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        this.snackBar.open(`${label} copied to clipboard`, 'Close', {
+          duration: 2000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom',
+        });
+
+        // Update button text if buttonType is provided
+        if (buttonType && this.copyButtonStates[buttonType]) {
+          this.copyButtonStates[buttonType].set('Copied');
+          setTimeout(() => {
+            this.copyButtonStates[buttonType].set('Copy');
+          }, 2000);
+        }
+      } else {
+        throw new Error('Copy command failed');
       }
-    );
+    } catch (err) {
+      this.logger.error('Fallback copy failed:', err);
+      this.snackBar.open('Failed to copy to clipboard', 'Close', {
+        duration: 3000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      });
+    }
+
+    document.body.removeChild(textArea);
   }
 
   navigateToSummarisePage(): void {

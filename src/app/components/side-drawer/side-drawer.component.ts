@@ -67,7 +67,7 @@ export class SideDrawerComponent implements OnInit {
     {
       id: 'projects',
       label: 'Projects',
-      description: 'Manage your summarisation projects',
+      description: 'Manage your projects',
       icon: 'folder',
       route: '/projects',
     },
@@ -131,7 +131,7 @@ export class SideDrawerComponent implements OnInit {
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.activeRoute = event.url;
-        
+
         // Auto-close mobile drawer on navigation completion
         if (this.isMobileScreen && this.drawerService.isMobileOpen) {
           this.drawerService.closeMobile();

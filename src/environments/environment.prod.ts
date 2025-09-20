@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   apiUrl: 'https://ai-summarise-be.aisummarise.workers.dev',
+  // Stripe configuration is now fetched from backend
   firebase: {
     apiKey: 'AIzaSyBNJN8l0xiiCxYGrcPVyPEf6y-XZl_MThY',
     authDomain: 'ai-summarise-be.firebaseapp.com',

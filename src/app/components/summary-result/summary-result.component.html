@@ -28,7 +28,7 @@
       <div class="summary-title-section">
         <h3>Summary</h3>
         <div class="summary-badges">
-          <span class="badge tokens-badge">{{ summaryData.tokensUsed | number}} tokens</span>
+          <app-token-badge [tokensCount]="summaryData.tokensUsed || 0" [isEstimation]="false"></app-token-badge>
           <span class="badge time-badge">{{ summaryData.processingTime | number}}ms</span>
         </div>
       </div>

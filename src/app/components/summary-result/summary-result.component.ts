@@ -5,6 +5,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DecimalPipe, NgIf } from '@angular/common';
 import { SummariseResponse } from '../../services/api.service';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 @Component({
   selector: 'app-summary-result',
@@ -14,6 +15,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
     MatTooltipModule,
     NgIf,
     DecimalPipe,
+    TokenBadgeComponent,
   ],
   templateUrl: './summary-result.component.html',
   styleUrl: './summary-result.component.scss',

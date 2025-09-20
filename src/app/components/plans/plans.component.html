@@ -1,4 +1,9 @@
 <div class="plans-container">
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoadingStatus">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Loading subscription status...</span>
+  </div>
   <!-- Header Section -->
   <div class="plans-header">
     <h1 class="page-title">Pricing that grows with you</h1>
@@ -63,14 +68,19 @@
 
       <!-- Plan Action -->
       <div class="plan-action">
-        <button 
-          mat-raised-button 
+        <button
+          mat-raised-button
           [color]="plan.current ? '' : 'primary'"
-          [disabled]="plan.current"
+          [disabled]="plan.disabled || isLoadingCheckout || isLoadingStatus"
           (click)="onPlanAction(plan)"
           class="plan-button"
           [class.current-plan]="plan.current">
-          {{ plan.buttonText }}
+          <span *ngIf="!isLoadingCheckout">{{ plan.buttonText }}</span>
+          <mat-spinner
+            *ngIf="isLoadingCheckout"
+            diameter="20"
+            mode="indeterminate">
+          </mat-spinner>
         </button>
         <span *ngIf="!plan.current && plan.price > 0" class="cancel-notice">
           Cancel Anytime

@@ -81,6 +81,11 @@
       .rewritten-summary-badges {
         display: flex;
         gap: 8px;
+        align-items: center;
+
+        app-token-badge {
+          display: inline-flex;
+        }
 
         .badge {
           padding: 4px 8px;
@@ -88,11 +93,6 @@
           font-size: 12px;
           font-weight: 500;
           white-space: nowrap;
-        }
-
-        .tokens-badge {
-          background-color: #e0f2fe;
-          color: #0277bd;
         }
 
         .time-badge {

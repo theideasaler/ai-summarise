@@ -4,11 +4,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { Observable, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Observable, Subject, combineLatest } from 'rxjs';
+import { takeUntil, first } from 'rxjs/operators';
 import { TokenService, TokenInfo } from '../../services/token.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
+import { StripeService } from '../../services/stripe.service';
+import { SubscriptionStatus } from '../../models/subscription.model';
+import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
 
 interface PlanFeature {
   name: string;
@@ -40,6 +46,8 @@ interface SubscriptionPlan {
     MatCardModule,
     MatIconModule,
     MatChipsModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
   ],
   templateUrl: './plans.component.html',
   styleUrl: './plans.component.scss',
@@ -49,6 +57,9 @@ export class PlansComponent implements OnInit, OnDestroy {
 
   tokenInfo$: Observable<TokenInfo | null>;
   userProfile$: Observable<UserProfile | null>;
+  subscriptionStatus$: Observable<SubscriptionStatus | null>;
+  isLoadingCheckout = false;
+  isLoadingStatus = false;
 
   subscriptionPlans: SubscriptionPlan[] = [
     {
@@ -121,22 +132,43 @@ export class PlansComponent implements OnInit, OnDestroy {
   constructor(
     private tokenService: TokenService,
     private authService: AuthService,
-    private logger: LoggerService
+    private stripeService: StripeService,
+    private logger: LoggerService,
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {
     this.tokenInfo$ = this.tokenService.tokenInfo$;
     this.userProfile$ = this.authService.userProfile$;
+    this.subscriptionStatus$ = this.stripeService.subscriptionStatus$;
   }
 
   ngOnInit(): void {
     // Initialize token service
     this.tokenService.initialize();
 
-    // Update current plan based on user profile
-    this.userProfile$.pipe(takeUntil(this.destroy$)).subscribe((profile) => {
-      if (profile) {
-        this._updateCurrentPlan(profile.subscriptionTier);
-      }
-    });
+    // Load subscription status if user is authenticated
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (user) => {
+        if (user) {
+          await this._loadSubscriptionStatus();
+        }
+      });
+
+    // Update current plan based on subscription status
+    combineLatest([
+      this.subscriptionStatus$,
+      this.userProfile$,
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([status, profile]) => {
+        if (status) {
+          this._updateCurrentPlan(status.tier);
+          this._updatePlanButtons(status);
+        } else if (profile) {
+          this._updateCurrentPlan(profile.subscriptionTier);
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -144,10 +176,24 @@ export class PlansComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  onPlanAction(plan: SubscriptionPlan): void {
+  async onPlanAction(plan: SubscriptionPlan): Promise<void> {
+    // Check if user is authenticated
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      this.snackBar.open('Please sign in to subscribe', 'Sign In', {
+        duration: 5000,
+      }).onAction().subscribe(() => {
+        this.router.navigate(['/auth/login']);
+      });
+      return;
+    }
+
     switch (plan.buttonAction) {
-      case 'upgrade':
-        this._handleUpgrade(plan);
+      case 'subscribe':
+        await this._handleSubscribe(plan);
+        break;
+      case 'manage':
+        await this._handleManageSubscription();
         break;
       case 'current':
         this.logger.log('Current plan selected');
@@ -167,16 +213,98 @@ export class PlansComponent implements OnInit, OnDestroy {
   private _updateCurrentPlan(subscriptionTier: string): void {
     this.subscriptionPlans.forEach((plan) => {
       plan.current = plan.id === subscriptionTier;
-      if (plan.current) {
-        plan.buttonText = 'Current Plan';
-        plan.buttonAction = 'current';
+    });
+  }
+
+  private _updatePlanButtons(status: SubscriptionStatus): void {
+    this.subscriptionPlans.forEach((plan) => {
+      if (plan.id === status.tier && status.status === 'active') {
+        plan.current = true;
+        plan.buttonText = status.cancelAtPeriodEnd ? 'Reactivate' : 'Manage Subscription';
+        plan.buttonAction = 'manage';
+        plan.disabled = false;
+      } else if (plan.id === 'free') {
+        if (status.tier !== 'free') {
+          plan.buttonText = 'Downgrade to Free';
+          plan.buttonAction = 'disabled';
+          plan.disabled = true;
+        }
+      } else {
+        const tierHierarchy: Record<string, number> = { free: 0, pro: 1, premium: 2 };
+        const planLevel = tierHierarchy[plan.id] ?? 0;
+        const currentLevel = tierHierarchy[status.tier] ?? 0;
+        const isUpgrade = planLevel > currentLevel;
+        plan.buttonText = isUpgrade ? `Upgrade to ${plan.name}` : `Change to ${plan.name}`;
+        plan.buttonAction = 'subscribe';
+        plan.disabled = false;
+        plan.current = false;
       }
     });
   }
 
-  private _handleUpgrade(plan: SubscriptionPlan): void {
-    this.logger.log('Upgrade to plan:', plan.name);
-    // TODO: Implement subscription upgrade logic
-    // This would typically integrate with a payment processor like Stripe
+  private async _handleSubscribe(plan: SubscriptionPlan): Promise<void> {
+    if (plan.id === 'free') {
+      this.snackBar.open('Free plan is already active', 'OK', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!['pro', 'premium'].includes(plan.id)) {
+      this.snackBar.open('This plan is not available for subscription', 'OK', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    this.isLoadingCheckout = true;
+    try {
+      const session = await this.stripeService.createCheckoutSession(
+        plan.id as 'pro' | 'premium'
+      );
+
+      if (session.session_id) {
+        await this.stripeService.redirectToCheckout(session.session_id);
+      } else {
+        throw new Error('No session ID returned');
+      }
+    } catch (error: any) {
+      this.logger.error('Checkout error:', error);
+      this.snackBar.open(
+        error.message || 'Failed to start checkout process',
+        'OK',
+        { duration: 5000 }
+      );
+    } finally {
+      this.isLoadingCheckout = false;
+    }
+  }
+
+  private async _handleManageSubscription(): Promise<void> {
+    this.isLoadingCheckout = true;
+    try {
+      await this.stripeService.redirectToPortal();
+    } catch (error: any) {
+      this.logger.error('Portal redirect error:', error);
+      this.snackBar.open(
+        error.message || 'Failed to open billing portal',
+        'OK',
+        { duration: 5000 }
+      );
+    } finally {
+      this.isLoadingCheckout = false;
+    }
+  }
+
+  private async _loadSubscriptionStatus(): Promise<void> {
+    this.isLoadingStatus = true;
+    try {
+      await this.stripeService.getSubscriptionStatus();
+    } catch (error: any) {
+      this.logger.error('Failed to load subscription status:', error);
+      // Don't show error to user, just log it
+    } finally {
+      this.isLoadingStatus = false;
+    }
   }
 }

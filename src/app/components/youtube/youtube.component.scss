@@ -138,50 +138,6 @@
   color: #1e293b;
 }
 
-// Token Badge Styles
-.token-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #e0f2fe;
-  border-radius: 20px;
-  padding: 4px 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #0277bd;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(2, 119, 189, 0.2);
-  }
-
-  .token-count {
-    font-size: 1.2rem;
-    white-space: nowrap;
-  }
-
-  .info-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: #0288d1;
-    cursor: help;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: #0277bd;
-    }
-  }
-
-  &.loading {
-    background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
-    border-color: #e0e0e0;
-    padding: 8px 16px;
-  }
-}
-
 // Token Error Display
 .token-error {
   display: flex;
@@ -436,7 +392,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 1rem 1.5rem 1rem;
+  margin: 0 2rem 1.5rem 2rem;
   padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
   border: 1px solid #fca5a5;
@@ -783,42 +739,7 @@
 }
 
 // Token Badge for Summary - matches input card token badge exactly
-.token-badge-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #e0f2fe;
-  border-radius: 20px;
-  padding: 4px 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #0277bd;
-  transition: all 0.3s ease;
 
-  &:hover {
-    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(2, 119, 189, 0.2);
-  }
-
-  .token-count {
-    font-size: 1.2rem;
-    white-space: nowrap;
-  }
-
-  .info-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: #0288d1;
-    cursor: help;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: #0277bd;
-    }
-  }
-}
 
 // Mobile Responsive Design Updates
 @media (max-width: 768px) {
@@ -838,10 +759,7 @@
     }
   }
 
-  .token-badge-summary {
-    padding: 4px 8px;
-    font-size: 0.7rem;
-  }
+  
 }
 
 .bottom-space {
@@ -900,45 +818,6 @@
       color: #1e293b;
     }
 
-    .header-badges {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-
-      .token-badge {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: #e0f2fe;
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #0277bd;
-
-        .token-count {
-          font-size: 0.875rem;
-          white-space: nowrap;
-        }
-      }
-
-      .processing-time-badge {
-        display: flex;
-        align-items: center;
-        background: #f3e8ff;
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #7c3aed;
-
-        .processing-time {
-          font-size: 0.875rem;
-          white-space: nowrap;
-        }
-      }
-    }
   }
 
   .card-content {

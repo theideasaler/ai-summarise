@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DecimalPipe, NgIf } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 export interface RewrittenSummaryData {
   rewrittenSummary: string;
@@ -21,6 +22,7 @@ export interface RewrittenSummaryData {
     MatTooltipModule,
     NgIf,
     DecimalPipe,
+    TokenBadgeComponent,
   ],
   templateUrl: './rewritten-summary.component.html',
   styleUrl: './rewritten-summary.component.scss',

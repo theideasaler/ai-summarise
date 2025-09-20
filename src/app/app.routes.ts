@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { AccountComponent } from './components/account/account.component';
 import { AudioSummariseComponent } from './components/audio-summarise/audio-summarise.component';
 import { HomeComponent } from './components/home/home.component';
 import { ImageSummariseComponent } from './components/image-summarise/image-summarise.component';
@@ -7,6 +8,7 @@ import { PlansComponent } from './components/plans/plans.component';
 import { ProjectDetailComponent } from './components/project-detail/project-detail.component';
 import { ProjectsComponent } from './components/projects/projects.component';
 import { SignupComponent } from './components/signup/signup.component';
+import { SubscriptionSuccessComponent } from './components/subscription-success/subscription-success.component';
 import { SummariseComponent } from './components/summarise/summarise.component';
 import { TextSummariseComponent } from './components/text-summarise/text-summarise.component';
 import { VideoSummariseComponent } from './components/video-summarise/video-summarise.component';
@@ -38,6 +40,8 @@ export const routes: Routes = [
       { path: 'projects', component: ProjectsComponent },
       { path: 'projects/:id', component: ProjectDetailComponent },
       { path: 'plans', component: PlansComponent },
+      { path: 'account', component: AccountComponent },
+      { path: 'subscription/success', component: SubscriptionSuccessComponent },
       {
         path: 'summarise',
         component: SummariseComponent,

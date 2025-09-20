@@ -49,6 +49,10 @@ export interface ProjectSummary {
   
   // Summary request ID for SSE event matching
   summaryRequestId?: string;
+  
+  // Token tracking fields
+  tokensUsed?: number; // Actual tokens consumed (for completed projects)
+  tokensReserved?: number; // Reserved tokens (for processing projects)
 }
 
 export interface ProjectListParams {
@@ -87,6 +91,7 @@ export interface ProjectSSEData {
   error?: string;
   summary?: string;
   tokensUsed?: number;
+  tokensReserved?: number; // Reserved tokens for processing projects
   processingTime?: number;
 }
 

@@ -30,6 +30,7 @@ import { RewriteFineTuningComponent } from '../rewrite-fine-tuning/rewrite-fine-
 import { RewrittenSummaryComponent } from '../rewritten-summary/rewritten-summary.component';
 import { SummaryResultComponent } from '../summary-result/summary-result.component';
 import { FileInfo, FileUploadComponent } from '../shared/file-upload/file-upload.component';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 @Component({
   selector: 'app-image-summarise',
@@ -44,6 +45,7 @@ import { FileInfo, FileUploadComponent } from '../shared/file-upload/file-upload
     MatProgressSpinnerModule,
     MatTooltipModule,
     FileUploadComponent,
+    TokenBadgeComponent,
     SummaryResultComponent,
     RewriteFineTuningComponent,
     RewrittenSummaryComponent,
@@ -470,14 +472,33 @@ export class ImageSummariseComponent implements OnInit, OnDestroy, AfterViewInit
 
   private _fallbackCopy(text: string): void {
     try {
-      if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
-        window.prompt('Copy to clipboard (Ctrl/Cmd+C), then press Enter:', text);
-        this.logger.log('Copy to clipboard prompt shown (fallback)');
-      } else {
-        this.logger.warn('No clipboard API or prompt available for fallback');
+      // Create a textarea element for copying
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          this.logger.log('Content copied using fallback method');
+          this.copyButtonText.set('Copied!');
+          setTimeout(() => this.copyButtonText.set('Copy'), 2000);
+        } else {
+          this.logger.warn('Fallback copy failed');
+          // Silently fail - user can still use Ctrl/Cmd+C manually
+        }
+      } catch (err) {
+        this.logger.error('execCommand copy failed:', err);
       }
+
+      document.body.removeChild(textarea);
     } catch (fallbackErr) {
-      this.logger.error('Fallback copy failed:', fallbackErr);
+      this.logger.error('Fallback copy error:', fallbackErr);
     }
   }
 

@@ -4,6 +4,8 @@ import { BehaviorSubject, Observable, from } from 'rxjs';
 import { User, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseService } from './firebase.service';
 import { LoggerService } from './logger.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface AuthUser {
   uid: string;
@@ -18,12 +20,16 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   subscriptionTier: 'free' | 'pro' | 'premium';
-  subscriptionStatus?: 'active' | 'inactive' | 'cancelled';
+  subscriptionStatus?: 'active' | 'inactive' | 'cancelled' | 'past_due';
   tokenBalance: number;
   dailyTokensUsed: number;
   lastTokenReset?: string;
   createdAt: string;
   updatedAt: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
 }
 
 @Injectable({
@@ -41,7 +47,8 @@ export class AuthService {
   constructor(
     private firebaseService: FirebaseService,
     private router: Router,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private http: HttpClient
   ) {
     // Initialize auth state asynchronously
     this.initializeAuthState().catch((error) => {
@@ -228,28 +235,85 @@ export class AuthService {
   }
 
   // Load user profile from backend
-  private async loadUserProfile(): Promise<void> {
+  async loadUserProfile(): Promise<void> {
     try {
-      // This will be implemented when we connect to the backend API
-      // For now, we'll create a mock profile
-      const currentUser = this.getCurrentUser();
-      if (currentUser) {
-        const mockProfile: UserProfile = {
-          id: currentUser.uid,
-          email: currentUser.email || '',
-          displayName: currentUser.displayName || '',
-          subscriptionTier: 'free',
-          subscriptionStatus: 'active',
-          tokenBalance: 1000,
-          dailyTokensUsed: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+      const token = await this.getIdToken();
+      if (!token) {
+        this.logger.warn('No auth token available to load user profile');
+        return;
+      }
 
-        this.userProfileSubject.next(mockProfile);
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      });
+
+      // Try to fetch subscription status from backend
+      try {
+        const subscriptionData = await this.http
+          .get<any>(`${environment.apiUrl}/api/stripe/subscription-status`, { headers })
+          .toPromise();
+
+        const currentUser = this.getCurrentUser();
+        if (currentUser && subscriptionData) {
+          const userProfile: UserProfile = {
+            id: currentUser.uid,
+            email: currentUser.email || '',
+            displayName: currentUser.displayName || '',
+            subscriptionTier: subscriptionData.subscriptionTier || 'free',
+            subscriptionStatus: subscriptionData.subscriptionStatus || 'inactive',
+            tokenBalance: subscriptionData.tokenBalance || 100000,
+            dailyTokensUsed: subscriptionData.tokensUsed || 0,
+            createdAt: subscriptionData.createdAt || new Date().toISOString(),
+            updatedAt: subscriptionData.updatedAt || new Date().toISOString(),
+            stripeCustomerId: subscriptionData.stripeCustomerId,
+            stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+            currentPeriodEnd: subscriptionData.currentPeriodEnd,
+            cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+          };
+
+          this.userProfileSubject.next(userProfile);
+        }
+      } catch (apiError) {
+        // If API call fails, create a default profile
+        this.logger.warn('Failed to fetch subscription status, using default profile:', apiError);
+
+        const currentUser = this.getCurrentUser();
+        if (currentUser) {
+          const defaultProfile: UserProfile = {
+            id: currentUser.uid,
+            email: currentUser.email || '',
+            displayName: currentUser.displayName || '',
+            subscriptionTier: 'free',
+            subscriptionStatus: 'active',
+            tokenBalance: 100000,
+            dailyTokensUsed: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          this.userProfileSubject.next(defaultProfile);
+        }
       }
     } catch (error) {
       this.logger.error('Error loading user profile:', error);
+    }
+  }
+
+  // Update subscription information
+  updateSubscriptionInfo(subscriptionData: any): void {
+    const currentProfile = this.userProfileSubject.value;
+    if (currentProfile) {
+      const updatedProfile: UserProfile = {
+        ...currentProfile,
+        subscriptionTier: subscriptionData.subscriptionTier || currentProfile.subscriptionTier,
+        subscriptionStatus: subscriptionData.subscriptionStatus || currentProfile.subscriptionStatus,
+        stripeCustomerId: subscriptionData.stripeCustomerId || currentProfile.stripeCustomerId,
+        stripeSubscriptionId: subscriptionData.stripeSubscriptionId || currentProfile.stripeSubscriptionId,
+        currentPeriodEnd: subscriptionData.currentPeriodEnd || currentProfile.currentPeriodEnd,
+        cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd ?? currentProfile.cancelAtPeriodEnd,
+      };
+      this.userProfileSubject.next(updatedProfile);
     }
   }
 

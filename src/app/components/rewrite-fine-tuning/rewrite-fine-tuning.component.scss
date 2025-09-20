@@ -33,42 +33,7 @@
     flex-shrink: 0;
   }
 
-  .token-badge-summary {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #e0f2fe;
-    border-radius: 20px;
-    padding: 4px 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #0277bd;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(2, 119, 189, 0.2);
-    }
-
-    .token-count {
-      font-size: 1.2rem;
-      white-space: nowrap;
-    }
-
-    .info-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #0288d1;
-      cursor: help;
-      transition: color 0.2s ease;
-
-      &:hover {
-        color: #0277bd;
-      }
-    }
-  }
+  
 
   .spacer {
     flex: 1;

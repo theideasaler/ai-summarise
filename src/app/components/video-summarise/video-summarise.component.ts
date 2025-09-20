@@ -1,11 +1,10 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   Component,
   OnDestroy,
   OnInit,
   computed,
   signal,
-  effect,
 } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -35,13 +34,13 @@ import { SummaryResultComponent } from '../summary-result/summary-result.compone
 import { YoutubeFineTuningComponent } from '../youtube-fine-tuning/youtube-fine-tuning.component';
 import { VideoFineTuningConfig } from '../../models/types';
 import { FileInfo, FileUploadComponent } from '../shared/file-upload/file-upload.component';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 @Component({
   selector: 'app-video-summarise',
   standalone: true,
   imports: [
     CommonModule,
-    DecimalPipe,
     ReactiveFormsModule,
     FormsModule,
     MatButtonModule,
@@ -53,6 +52,7 @@ import { FileInfo, FileUploadComponent } from '../shared/file-upload/file-upload
     MatFormFieldModule,
     MatCheckboxModule,
     FileUploadComponent,
+    TokenBadgeComponent,
     SummaryResultComponent,
     RewriteFineTuningComponent,
     RewrittenSummaryComponent,
@@ -146,12 +146,7 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     private logger: LoggerService,
     private route: ActivatedRoute
   ) {
-    // Set up token counting on FPS change
-    effect(() => {
-      if (this.selectedFile() && this.selectedFile()?.duration) {
-        this._estimateTokens();
-      }
-    });
+    // Effect removed - token counting is now handled via debounced configChanges$ Subject
   }
   
   ngOnInit(): void {
@@ -232,10 +227,10 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
   
   onFilesSelected(files: FileInfo[]): void {
     if (files.length === 0) return;
-    
+
     const file = files[0];
     this.selectedFile.set(file);
-    
+
     // Reset all fine-tuning if not expanded
     if (!this.isFineTuningExpanded()) {
       this.customPrompt.set('');
@@ -244,14 +239,19 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
       this.startTime.set(0);
       this.endTime.set(null);
     }
-    
+
     // Set default end time to video duration
     if (file.duration) {
       this.endTime.set(file.duration);
       this.endTimeControl.setValue(this._formatDuration(file.duration), { emitEvent: false });
     }
-    
-    this._estimateTokens();
+
+    // Show loading indicator immediately (visual feedback)
+    this.isLoadingTokens.set(true);
+    this.tokenCount.set(null);
+
+    // Trigger debounced token estimation
+    this.configChanges$.next();
   }
   
   onFileRemoved(): void {
@@ -431,16 +431,30 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
   
   toggleTimeRange(): void {
     this.useTimeRange.set(!this.useTimeRange());
-    this._estimateTokens();
+
+    // Only trigger token estimation if we have a file selected
+    if (this.selectedFile() && this.selectedFile()?.duration) {
+      // Show loading indicator immediately (visual feedback)
+      this.isLoadingTokens.set(true);
+      this.tokenCount.set(null);
+
+      // Trigger debounced token estimation
+      this.configChanges$.next();
+    }
   }
   
   onFineTuningSubmit(customPrompt: string): void {
     this.customPrompt.set(customPrompt);
     this.showFineTuningInput.set(false);
-    
+
     // Refetch token count with new custom prompt
-    if (this.selectedFile()) {
-      this._estimateTokens();
+    if (this.selectedFile() && this.selectedFile()?.duration) {
+      // Show loading indicator immediately (visual feedback)
+      this.isLoadingTokens.set(true);
+      this.tokenCount.set(null);
+
+      // Trigger debounced token estimation
+      this.configChanges$.next();
     }
   }
   
@@ -459,32 +473,35 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     // Guard on duration
     const file = this.selectedFile();
     if (!file?.duration) return;
-    
+
     // Enable time range to ensure endSeconds is included in payload
     this.useTimeRange.set(true);
-    
+
     // Update FPS without triggering valueChanges listener
     this.fpsControl.setValue(config.fps, { emitEvent: false });
-    
+
     // Clamp and persist time values to signals
     const start = Math.max(0, Math.min(config.startSeconds, file.duration));
     const end = Math.max(start, Math.min(config.endSeconds, file.duration));
-    
+
     this.startTime.set(start);
     this.endTime.set(end);
-    
+
     // Update form controls with FORMATTED strings, prevent circular updates
     this.startTimeControl.setValue(this._formatDuration(start), { emitEvent: false });
     this.endTimeControl.setValue(this._formatDuration(end), { emitEvent: false });
-    
+
     // Update custom prompt if present
     if (config.customPrompt !== undefined) {
       this.customPrompt.set(config.customPrompt);
     }
-    
-    // Trigger token re-estimation (single trigger point)
+
+    // Show loading indicator immediately (visual feedback)
     this.isLoadingTokens.set(true);
     this.tokenCount.set(null);
+
+    // Trigger debounced token re-estimation via configChanges$ Subject
+    // This will be debounced by the subscription in ngOnInit
     this.configChanges$.next();
   }
   
@@ -673,14 +690,33 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
 
   private _fallbackCopy(text: string): void {
     try {
-      if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
-        window.prompt('Copy to clipboard (Ctrl/Cmd+C), then press Enter:', text);
-        this.logger.log('Copy to clipboard prompt shown (fallback)');
-      } else {
-        this.logger.warn('No clipboard API or prompt available for fallback');
+      // Create a textarea element for copying
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          this.logger.log('Content copied using fallback method');
+          this.copyButtonText.set('Copied!');
+          setTimeout(() => this.copyButtonText.set('Copy'), 2000);
+        } else {
+          this.logger.warn('Fallback copy failed');
+          // Silently fail - user can still use Ctrl/Cmd+C manually
+        }
+      } catch (err) {
+        this.logger.error('execCommand copy failed:', err);
       }
+
+      document.body.removeChild(textarea);
     } catch (fallbackErr) {
-      this.logger.error('Fallback copy failed:', fallbackErr);
+      this.logger.error('Fallback copy error:', fallbackErr);
     }
   }
 }

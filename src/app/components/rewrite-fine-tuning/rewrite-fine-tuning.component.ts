@@ -6,6 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
 
 @Component({
   selector: 'app-rewrite-fine-tuning',
@@ -18,6 +19,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatIconModule,
     MatInputModule,
     MatTooltipModule,
+    TokenBadgeComponent,
   ],
   templateUrl: './rewrite-fine-tuning.component.html',
   styleUrl: './rewrite-fine-tuning.component.scss',

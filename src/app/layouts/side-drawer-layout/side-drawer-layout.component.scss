@@ -18,24 +18,24 @@
   overflow: auto;
   padding: 0;
   background-color: #ffffff;
-  margin-left: 280px; // Account for side drawer width
+  margin-left: var(--app-drawer-offset, 280px);
   transition: margin-left 0.3s ease;
 }
 
 // Drawer state adjustments
 .main-content.drawer-collapsed {
-  margin-left: 80px; // Account for collapsed drawer width
+  --app-drawer-offset: 80px;
 }
 
 .main-content.drawer-mobile-open {
-  margin-left: 0; // No margin on mobile when drawer is overlay
+  --app-drawer-offset: 0px;
 }
 
 // Responsive design
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
-    margin-left: 0 !important; // Remove margin on mobile - drawer becomes overlay
+    --app-drawer-offset: 0px; // Remove margin on mobile - drawer becomes overlay
   }
 }
 
