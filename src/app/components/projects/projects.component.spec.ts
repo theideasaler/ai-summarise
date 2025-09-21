@@ -14,6 +14,16 @@ const sseServiceStub: any = {
 };
 const authServiceStub: any = { getIdToken: () => Promise.resolve('') };
 const snackBarStub: any = { open: () => {} };
+const dialogConfigServiceStub: any = {
+  getDeleteDialogConfig: () => ({
+    data: {},
+    width: '400px',
+    maxWidth: '90vw',
+    hasBackdrop: true,
+    backdropClass: 'delete-dialog-backdrop',
+    panelClass: 'delete-dialog-panel'
+  })
+};
 
 describe('ProjectsComponent - formatRelativeTime', () => {
   let component: ProjectsComponent;
@@ -33,7 +43,8 @@ describe('ProjectsComponent - formatRelativeTime', () => {
       tokenServiceStub,
       sseServiceStub,
       authServiceStub,
-      snackBarStub
+      snackBarStub,
+      dialogConfigServiceStub
     );
   });
 

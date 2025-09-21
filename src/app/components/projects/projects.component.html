@@ -137,6 +137,10 @@
               >
               </app-token-badge>
               }
+
+              @if (project.hasRewrite) {
+              <app-rewrite-badge></app-rewrite-badge>
+              }
             </div>
 
             <div class="project-badges mobile-only">
@@ -155,6 +159,10 @@
                 "
               >
               </app-token-badge>
+              }
+
+              @if (project.hasRewrite) {
+              <app-rewrite-badge></app-rewrite-badge>
               } @if (project.status) {
               <span
                 class="status-badge"

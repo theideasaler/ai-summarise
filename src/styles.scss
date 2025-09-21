@@ -106,3 +106,51 @@ small { font-size: 1.4rem; line-height: 1.4; } /* 14px - only for truly small te
 .red-dot-badge {
   cursor: pointer;
 }
+
+/* Custom overlay styles for delete dialog - ensures it appears above side drawer */
+::ng-deep .cdk-overlay-backdrop.delete-dialog-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  z-index: 1200 !important; /* Above side drawer (1100) */
+  opacity: 1 !important;
+  pointer-events: auto !important; /* Ensure backdrop blocks clicks */
+}
+
+::ng-deep .cdk-overlay-pane.delete-dialog-panel {
+  z-index: 1201 !important; /* Above backdrop */
+  pointer-events: auto !important;
+}
+
+::ng-deep .delete-dialog-panel .mat-mdc-dialog-container {
+  z-index: 1201 !important;
+  pointer-events: auto !important;
+  border-radius: 16px !important;
+  overflow: visible !important;
+  max-height: 90vh !important;
+  padding: 0 !important;
+}
+
+/* Ensure proper backdrop behavior */
+::ng-deep .cdk-overlay-container {
+  pointer-events: none !important;
+
+  .cdk-overlay-backdrop {
+    pointer-events: auto !important;
+  }
+
+  .cdk-overlay-pane {
+    pointer-events: auto !important;
+  }
+}
+
+/* Ensure tooltips still appear above dialog */
+.mat-mdc-tooltip {
+  z-index: 1202 !important;
+}
+
+/* Ensure select panels appear above dialog */
+.cdk-overlay-pane.mat-mdc-select-panel {
+  z-index: 1203 !important;
+}
+.mdc-dialog--open .mat-mdc-dialog-surface, .mdc-dialog--closing .mat-mdc-dialog-surface {
+  border-radius: 16px;
+}

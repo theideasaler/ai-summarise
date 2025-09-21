@@ -1,4 +1,5 @@
 <div class="audio-summarise-container no-form-field-bottom-space">
+  <div class="top-space"></div>
   <!-- Summary Result (match YouTube: show during loading) -->
   <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
     [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"

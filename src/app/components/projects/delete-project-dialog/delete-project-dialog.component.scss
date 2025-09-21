@@ -1,0 +1,241 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+:host {
+  display: flex;
+}
+
+.delete-dialog {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  animation: scaleIn 200ms ease-out;
+  position: relative;
+  overflow: visible;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  &__icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__icon {
+    color: #dc2626 !important;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  &__title-wrapper {
+    flex: 1;
+    padding-top: 4px;
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  &__content {
+    margin-bottom: 24px;
+    padding-left: 0; // Remove left padding to center content
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    p {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 12px 0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    strong {
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .project-name {
+      color: #111827;
+      font-weight: 500;
+    }
+
+    &__project-info {
+      background-color: #f9fafb;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border-left: 3px solid #dc2626;
+    }
+
+    &__meta-info {
+      font-size: 13px;
+      color: #9ca3af;
+      font-style: italic;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 150ms ease;
+  outline: none;
+  font-family: inherit;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+
+  &:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+
+  &--cancel {
+    background-color: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    min-width: 100px;
+
+    &:hover:not(:disabled) {
+      background-color: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    &:active:not(:disabled) {
+      background-color: #f3f4f6;
+      transform: scale(0.98);
+    }
+  }
+
+  &--delete {
+    background-color: #dc2626;
+    color: #ffffff;
+    min-width: 100px;
+
+    &:hover:not(:disabled) {
+      background-color: #b91c1c;
+      box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      background-color: #991b1b;
+      transform: scale(0.98);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Mobile responsive styles
+@media (max-width: 640px) {
+  .delete-dialog {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+
+    &__header {
+      gap: 10px;
+    }
+
+    &__icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    &__icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &__title {
+      font-size: 16px;
+    }
+
+    &__content {
+      padding-left: 0;
+      margin-bottom: 20px;
+
+      p {
+        font-size: 13px;
+      }
+    }
+
+    &__actions {
+      flex-direction: column-reverse;
+      gap: 8px;
+
+      .btn {
+        width: 100%;
+        min-height: 44px; // Better touch target on mobile
+      }
+    }
+  }
+}
+
+// Remove dark mode - keeping white theme only

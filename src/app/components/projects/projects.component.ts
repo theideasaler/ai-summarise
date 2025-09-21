@@ -31,7 +31,10 @@ import type {
 import { LoggerService } from '../../services/logger.service';
 import { TokenService } from '../../services/token.service';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+import { DeleteProjectDialogComponent } from './delete-project-dialog/delete-project-dialog.component';
+import { DialogConfigService } from '../../services/dialog-config.service';
 import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
+import { RewriteBadgeComponent } from '../shared/rewrite-badge/rewrite-badge.component';
 import {
   getContentTypeMetadata as resolveContentTypeMetadata,
   ContentTypeUIMetadata,
@@ -55,6 +58,7 @@ import {
     MatDialogModule,
     MatTooltipModule,
     TokenBadgeComponent,
+    RewriteBadgeComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -104,11 +108,15 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     { value: 'name', label: 'Name' },
   ];
 
+  // Track projects being deleted
+  deletingProjects = new Set<string>();
+
   constructor(
     private apiService: ApiService,
     private router: Router,
     private route: ActivatedRoute,
     private dialog: MatDialog,
+    private dialogConfig: DialogConfigService,
     private logger: LoggerService,
     private tokenService: TokenService,
     private sseService: SSESimpleService,
@@ -318,6 +326,13 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Check if project is currently being deleted
+   */
+  isProjectDeleting(project: ProjectSummary): boolean {
+    return this.deletingProjects.has(project.id);
+  }
+
+  /**
    * Get tooltip text for delete button
    */
   getDeleteTooltip(project: ProjectSummary): string {
@@ -389,28 +404,39 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
     // Prevent deletion if project is not deletable (e.g., processing)
     if (!this.isProjectDeletable(project)) {
+      this.snackBar.open(
+        'Cannot delete project while it is being processed',
+        'OK',
+        { duration: 3000 }
+      );
       return;
     }
 
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Delete Project',
-        message: `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
-        confirmText: 'Delete',
-        cancelText: 'Cancel',
-        type: 'delete',
-      },
+    // Use new dialog with configuration
+    const config = this.dialogConfig.getDeleteDialogConfig({
+      projectName: project.name || 'Untitled Project',
+      projectId: project.id,
+      projectType: project.contentType,
+      tokensUsed: project.tokensUsed,
+      createdAt: new Date(project.createdAt)
     });
 
+    const dialogRef = this.dialog.open(
+      DeleteProjectDialogComponent,
+      config
+    );
+
     dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
+      if (result?.confirmed) {
         this._deleteProject(project);
       }
     });
   }
 
   private _deleteProject(project: ProjectSummary): void {
+    // Add to deleting set
+    this.deletingProjects.add(project.id);
+
     this.apiService
       .deleteProject(project.id)
       .pipe(takeUntil(this.destroy$))
@@ -424,12 +450,31 @@ export class ProjectsComponent implements OnInit, OnDestroy {
           this.projects.set(updatedProjects);
           this.totalProjects--;
 
+          // Show success message
+          this.snackBar.open(
+            `Project "${project.name}" deleted successfully`,
+            'OK',
+            { duration: 3000 }
+          );
+
+          // Update token count
+          this.tokenService.initialize();
+
           this.logger.log('Project deleted successfully:', project.id);
         },
         error: (error) => {
           this.logger.error('Error deleting project:', error);
           this.error.set('Failed to delete project. Please try again.');
+          this.snackBar.open(
+            'Failed to delete project. Please try again.',
+            'OK',
+            { duration: 5000 }
+          );
         },
+        complete: () => {
+          // Remove from deleting set
+          this.deletingProjects.delete(project.id);
+        }
       });
   }
 
