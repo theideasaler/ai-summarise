@@ -34,11 +34,7 @@
   > * {
     pointer-events: auto;
   }
-  @media (max-width: 768px) {
-    left: 0;
-    right: 0;
-    padding: 0 1rem 1rem;
-  }
+  @media (max-width: 768px) { left: 0; right: 0; padding: 0 0 1rem; }
 }
 
 .input-card {

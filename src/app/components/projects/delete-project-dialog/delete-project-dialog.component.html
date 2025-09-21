@@ -1,0 +1,28 @@
+<div class="delete-dialog" @dialogAnimation role="dialog" [attr.aria-labelledby]="'dialog-title'"
+  [attr.aria-describedby]="'dialog-description'">
+
+  <div class="delete-dialog__header">
+    <div class="delete-dialog__icon-wrapper">
+      <mat-icon class="delete-dialog__icon" aria-hidden="true">warning</mat-icon>
+    </div>
+    <div class="delete-dialog__title-wrapper">
+      <h2 id="dialog-title" class="delete-dialog__title">Delete Project</h2>
+    </div>
+  </div>
+
+  <div id="dialog-description" class="delete-dialog__content">
+    <p>
+      Are you sure you want to delete "<strong class="project-name">{{ displayProjectName }}</strong>"?
+      This action cannot be undone.
+    </p>
+  </div>
+
+  <div class="delete-dialog__actions">
+    <button type="button" class="btn btn--cancel" (click)="onCancel()" cdkFocusInitial aria-label="Cancel deletion">
+      Cancel
+    </button>
+    <button type="button" class="btn btn--delete" (click)="onConfirm()" aria-label="Confirm deletion">
+      Delete
+    </button>
+  </div>
+</div>

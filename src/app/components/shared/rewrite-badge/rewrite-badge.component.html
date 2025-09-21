@@ -1,0 +1,9 @@
+<div class="rewrite-badge" [attr.aria-label]="badgeText" role="status"
+  (click)="onBadgeClick($event)"
+  [matTooltip]="tooltipText"
+  matTooltipPosition="above"
+  [matTooltipDisabled]="isTouchDevice"
+  #tooltip="matTooltip">
+  <!-- <span class="badge-text">{{ badgeText }}</span> -->
+  <mat-icon class="edit-icon">edit_note</mat-icon>
+</div>
