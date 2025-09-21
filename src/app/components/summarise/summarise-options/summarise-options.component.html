@@ -8,14 +8,15 @@
     <mat-card 
       *ngFor="let option of options" 
       class="option-card"
-      (click)="navigateToOption(option.route)"
-      [style.--option-color]="option.color">
+      (click)="navigateToOption(option.summariseRoute)"
+      [style.--option-color]="option.iconColor"
+      [style.--option-icon-bg]="option.iconBackground">
       <mat-card-content>
         <div class="option-icon">
-          <mat-icon [style.color]="option.color">{{ option.icon }}</mat-icon>
+          <mat-icon [style.color]="option.iconColor">{{ option.icon }}</mat-icon>
         </div>
         <div class="option-content">
-          <h3>{{ option.title }}</h3>
+          <h3>{{ option.label }}</h3>
           <p>{{ option.description }}</p>
         </div>
         <div class="option-arrow">

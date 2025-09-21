@@ -1,0 +1,591 @@
+// YouTube-like styling for webpage input
+
+// Override specific styles for webpage
+.webpage-summarise-container {
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// Main Content - same as YouTube
+.main-content {
+  border-radius: 12px;
+  background: #fafafa;
+  min-height: calc(100dvh - 40px);
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 200px;
+}
+
+// Fixed Bottom Section - same as YouTube
+.fixed-bottom-section {
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  right: 10px;
+  transform: none;
+  width: auto;
+  max-width: none;
+  padding: 0 2rem 2rem;
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  transition: left 0.3s ease;
+
+  @media screen and (max-width: 768px) {
+    left: 0;
+    right: 0;
+    padding: 0 1rem 1rem;
+  }
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+// Input Card - same as YouTube
+.input-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  width: calc(100% - 20px);
+  max-width: 960px;
+  margin: 0 20px;
+  position: absolute;
+  bottom: 10px;
+  z-index: 10;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+}
+
+// Settings Card - same as YouTube
+.settings-card {
+  transform: translateY(calc(-100% - 10px));
+  position: absolute;
+  width: 100%;
+  margin-bottom: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  overflow: visible !important;
+  box-sizing: border-box;
+  padding-bottom: 8px;
+  transform-origin: center bottom;
+
+  /* Ensure all child elements maintain overflow visibility */
+  * {
+    overflow: visible;
+  }
+}
+
+// Card Header - same as YouTube
+.card-header {
+  gap: 16px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.card-icon {
+  color: #667eea;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+// Token Badge - same as YouTube
+
+
+// Align rewrite action bar width with YouTube
+.rewrite-action-bar-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 1rem auto 2rem auto;
+  box-sizing: border-box;
+}
+
+.bottom-space {
+  width: 100%;
+  transition: height 0.3s ease; // Smooth transitions
+}
+
+// Loading Dots Animation
+.loading-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9e9e9e;
+    animation: loading-bounce 1.4s ease-in-out infinite both;
+
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0s;
+    }
+  }
+}
+
+@keyframes loading-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Input Container - YouTube-style
+.input-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 2rem;
+  width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    padding: 1.5rem;
+  }
+
+  .input-field {
+    flex: 1;
+    min-width: 0;
+
+    .success-icon {
+      color: #4caf50;
+    }
+
+    .loading-icon {
+      color: #ff9800;
+      animation: rotate 2s linear infinite;
+    }
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(-360deg);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    flex: none;
+  }
+
+  ::ng-deep .mat-mdc-form-field {
+    width: 100%;
+
+    .mdc-notched-outline {
+      border-color: #e2e8f0;
+      border-width: 2px;
+    }
+
+    &.mat-focused .mdc-notched-outline {
+      border-color: #667eea;
+      border-width: 2px;
+    }
+  }
+}
+
+// Action Buttons - YouTube-style
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    justify-content: center;
+    width: 100%;
+    gap: 8px;
+  }
+}
+
+.submit-button {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 48px;
+    height: 48px;
+  }
+
+  mat-icon {
+    font-size: 24px;
+    color: white;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.tune-button-container {
+  position: relative;
+
+  .red-dot-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 1px solid white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    z-index: 2;
+  }
+
+  .tune-button {
+    width: 56px;
+    height: 56px;
+    background: #64748b !important;
+    box-shadow: 0 4px 16px rgba(100, 116, 139, 0.2);
+    border: none;
+    transition: all 0.3s ease;
+
+    @media (max-width: 768px) {
+      width: 48px;
+      height: 48px;
+    }
+
+    mat-icon {
+      color: white;
+      font-size: 24px;
+    }
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(100, 116, 139, 0.3);
+    }
+
+    &.active {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+
+      mat-icon {
+        color: white;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Fine-tuning Button
+.fine-tuning-button {
+  background: #64748b !important;
+  box-shadow: 0 4px 16px rgba(100, 116, 139, 0.2);
+  transition: all 0.3s ease;
+
+  mat-icon {
+    font-size: 24px;
+    color: white;
+  }
+
+  &.active {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(100, 116, 139, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    transform: none;
+  }
+}
+
+// Fine-tuning Content
+.fine-tuning-content {
+  padding: 20px;
+
+  .full-width {
+    width: 100%;
+    margin: 0;
+
+    ::ng-deep {
+      .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
+
+      .mat-mdc-text-field-wrapper {
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+
+      textarea {
+        width: 100%;
+        resize: vertical;
+        min-height: 72px;
+      }
+    }
+  }
+}
+
+// Error Message
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 2rem 1.5rem 2rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  color: #dc2626;
+  position: relative;
+  z-index: 1;
+  font-size: 1.6rem;
+  font-weight: 500;
+
+  mat-icon {
+    color: #ef4444;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    margin: 1.5rem;
+    margin-top: 0;
+    padding: 0.875rem 1.25rem;
+    gap: 10px;
+  }
+}
+
+// Loading Spinner
+.loading-spinner {
+  margin-left: 0.5rem;
+}
+
+// URL Input Field (similar to YouTube URL input)
+.url-input-field {
+  width: 100%;
+
+  ::ng-deep {
+    .mat-mdc-form-field-flex {
+      background: #f8fafc;
+      border-radius: 12px;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      background: transparent;
+    }
+
+    .mat-mdc-form-field-focus-overlay {
+      background: transparent;
+    }
+
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled) {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: #e2e8f0;
+      }
+    }
+
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: #cbd5e1;
+      }
+    }
+
+    .mdc-text-field--outlined:not(
+        .mdc-text-field--disabled
+      ).mdc-text-field--focused {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: #6366f1;
+      }
+    }
+
+    input {
+      font-size: 1rem;
+      padding: 0.75rem 0;
+    }
+
+    .mat-mdc-form-field-icon-prefix {
+      padding-right: 0.75rem;
+      color: #64748b;
+    }
+  }
+}
+
+// Marketing Hero Section
+.marketing-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem 20px;
+  text-align: center;
+
+  .hero-content {
+    max-width: 800px;
+
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: #64748b;
+      margin-bottom: 3rem;
+      line-height: 1.6;
+    }
+
+    .hero-features {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #475569;
+        font-weight: 500;
+
+        mat-icon {
+          color: #3b82f6;
+        }
+      }
+    }
+  }
+}
+
+// Loading Spinner
+.loading-spinner {
+  margin-left: 0.5rem;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .webpage-summarise-container {
+    padding: 1rem;
+  }
+
+  .marketing-hero {
+    padding: 2rem 1.5rem;
+
+    .hero-content {
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .marketing-hero {
+    padding: 1.5rem 1rem;
+
+    .hero-content {
+      .hero-title {
+        font-size: 1.75rem;
+      }
+
+      .hero-features {
+        .feature-item {
+          font-size: 0.9rem;
+        }
+      }
+    }
+  }
+}

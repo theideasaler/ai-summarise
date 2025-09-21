@@ -3,19 +3,17 @@ import { CanActivate, Router, UrlTree } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map, take, switchMap, filter } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
+import { ContentObserver } from '@angular/cdk/observers';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthGuard implements CanActivate {
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): Observable<boolean | UrlTree> {
     return this.authService.isLoading$.pipe(
-      filter(isLoading => !isLoading), // Wait until loading is complete
+      filter((isLoading) => !isLoading), // Wait until loading is complete
       take(1),
       switchMap(() => {
         return this.authService.currentUser$.pipe(

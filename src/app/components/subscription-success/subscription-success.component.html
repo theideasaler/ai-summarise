@@ -1,0 +1,57 @@
+<div class="subscription-success-container">
+  <!-- Loading State -->
+  <mat-card *ngIf="isLoading" class="status-card">
+    <mat-card-content class="loading-content">
+      <mat-spinner diameter="48"></mat-spinner>
+      <h2>Processing your subscription...</h2>
+      <p>Please wait while we confirm your payment and activate your subscription.</p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Success State -->
+  <mat-card *ngIf="!isLoading && isSuccess" class="status-card success">
+    <mat-card-content class="success-content">
+      <div class="icon-container">
+        <mat-icon class="success-icon">check_circle</mat-icon>
+      </div>
+      <h1>Subscription Successful!</h1>
+      <p class="success-message">
+        Your subscription has been activated successfully. You now have access to all premium features.
+      </p>
+      <div class="action-buttons">
+        <button mat-raised-button color="primary" (click)="goToDashboard()">
+          <mat-icon>dashboard</mat-icon>
+          Go to Dashboard
+        </button>
+        <button mat-button (click)="goToAccount()">
+          <mat-icon>account_circle</mat-icon>
+          Manage Subscription
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Error State -->
+  <mat-card *ngIf="!isLoading && !isSuccess" class="status-card error">
+    <mat-card-content class="error-content">
+      <div class="icon-container">
+        <mat-icon class="error-icon">error</mat-icon>
+      </div>
+      <h1>Something went wrong</h1>
+      <p class="error-message">{{ errorMessage }}</p>
+      <p class="help-text">
+        Your payment may have been processed successfully. Please check your account or contact support if you need assistance.
+      </p>
+      <div class="action-buttons">
+        <button mat-raised-button color="primary" (click)="goToPlans()">
+          <mat-icon>credit_card</mat-icon>
+          Back to Plans
+        </button>
+        <button mat-button (click)="goToAccount()">
+          <mat-icon>account_circle</mat-icon>
+          Check Account
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { AuthService, AuthUser } from '../../services/auth.service';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
+import { LoggerService } from '../../services/logger.service';
 
 @Component({
   selector: 'app-header',
@@ -16,7 +17,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   currentUser$: Observable<AuthUser | null>;
   isLoading$: Observable<boolean>;
 
-  constructor(private authService: AuthService, private router: Router) {
+  constructor(private authService: AuthService, private router: Router, private logger: LoggerService) {
     this.currentUser$ = this.authService.currentUser$;
     this.isLoading$ = this.authService.isLoading$;
   }
@@ -34,7 +35,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       await this.authService.signOut();
       this.router.navigate(['/']);
     } catch (error) {
-      console.error('Sign out error:', error);
+      this.logger.error('Sign out error:', error);
     }
   }
 

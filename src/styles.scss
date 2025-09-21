@@ -16,7 +16,7 @@ body {
 
 app-root {
   display: block;
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
 }
 
@@ -101,4 +101,8 @@ small { font-size: 1.4rem; line-height: 1.4; } /* 14px - only for truly small te
   .mdc-tooltip__surface {
     background: transparent !important;
   }
+}
+
+.red-dot-badge {
+  cursor: pointer;
 }

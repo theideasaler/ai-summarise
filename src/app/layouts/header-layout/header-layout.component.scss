@@ -1,0 +1,20 @@
+.header-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: #ffffff;
+}
+
+.header-layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .header-layout-main {
+    padding: 0;
+  }
+}

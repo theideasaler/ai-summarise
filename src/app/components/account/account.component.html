@@ -1,0 +1,167 @@
+<div class="account-container">
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isLoadingStatus">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Loading account information...</span>
+  </div>
+
+  <!-- Account Header -->
+  <div class="account-header">
+    <h1 class="page-title">Account Settings</h1>
+    <p class="page-subtitle">Manage your subscription and account details</p>
+  </div>
+
+  <!-- Account Content -->
+  <div class="account-content" *ngIf="!isLoadingStatus">
+    <!-- User Profile Card -->
+    <mat-card class="info-card" *ngIf="userProfile$ | async as profile">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>account_circle</mat-icon>
+        <mat-card-title>Profile Information</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{ profile.email }}</span>
+        </div>
+        <div class="info-row" *ngIf="profile.displayName">
+          <span class="info-label">Name:</span>
+          <span class="info-value">{{ profile.displayName }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Account Created:</span>
+          <span class="info-value">{{ formatDate(profile.createdAt) }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Subscription Card -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>credit_card</mat-icon>
+        <mat-card-title>Subscription Details</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <ng-container *ngIf="subscriptionStatus$ | async as status; else noSubscription">
+          <div class="info-row">
+            <span class="info-label">Current Plan:</span>
+            <mat-chip [color]="getTierColor(status.tier)" selected>
+              {{ status.tier | titlecase }}
+            </mat-chip>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status:</span>
+            <mat-chip [color]="getStatusColor(status.status)" selected>
+              {{ status.status | titlecase }}
+            </mat-chip>
+          </div>
+          <div class="info-row" *ngIf="status.currentPeriodEnd">
+            <span class="info-label">
+              {{ status.cancelAtPeriodEnd ? 'Subscription Ends:' : 'Next Billing Date:' }}
+            </span>
+            <span class="info-value">{{ formatDate(status.currentPeriodEnd) }}</span>
+          </div>
+          <div class="info-row" *ngIf="status.cancelAtPeriodEnd">
+            <span class="info-label warning-text">
+              <mat-icon>warning</mat-icon>
+              Your subscription is scheduled to cancel at the end of the current period
+            </span>
+          </div>
+
+          <mat-divider class="section-divider"></mat-divider>
+
+          <!-- Subscription Actions -->
+          <div class="action-buttons">
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="openBillingPortal()"
+              [disabled]="isLoadingPortal"
+              *ngIf="status.tier !== 'free'">
+              <mat-spinner diameter="20" *ngIf="isLoadingPortal"></mat-spinner>
+              <span *ngIf="!isLoadingPortal">
+                <mat-icon>manage_accounts</mat-icon>
+                Manage Billing
+              </span>
+            </button>
+
+            <button
+              mat-raised-button
+              (click)="goToPlans()"
+              *ngIf="status.tier === 'free'">
+              <mat-icon>upgrade</mat-icon>
+              Upgrade Plan
+            </button>
+
+            <button
+              mat-button
+              color="warn"
+              (click)="cancelSubscription()"
+              [disabled]="isLoadingCancel"
+              *ngIf="status.tier !== 'free' && status.status === 'active' && !status.cancelAtPeriodEnd">
+              <mat-spinner diameter="20" *ngIf="isLoadingCancel"></mat-spinner>
+              <span *ngIf="!isLoadingCancel">
+                <mat-icon>cancel</mat-icon>
+                Cancel Subscription
+              </span>
+            </button>
+
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="reactivateSubscription()"
+              [disabled]="isLoadingPortal"
+              *ngIf="status.cancelAtPeriodEnd">
+              <mat-spinner diameter="20" *ngIf="isLoadingPortal"></mat-spinner>
+              <span *ngIf="!isLoadingPortal">
+                <mat-icon>restart_alt</mat-icon>
+                Reactivate Subscription
+              </span>
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #noSubscription>
+          <div class="no-subscription">
+            <p>You are currently on the Free plan.</p>
+            <button mat-raised-button color="primary" (click)="goToPlans()">
+              <mat-icon>upgrade</mat-icon>
+              View Available Plans
+            </button>
+          </div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Token Usage Card -->
+    <mat-card class="info-card" *ngIf="tokenInfo$ | async as tokenInfo">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>toll</mat-icon>
+        <mat-card-title>Token Usage</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row">
+          <span class="info-label">Tokens Used This Month:</span>
+          <span class="info-value">{{ tokenInfo.tokensUsed | number }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Monthly Limit:</span>
+          <span class="info-value">{{ tokenInfo.monthlyLimit | number }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Remaining Tokens:</span>
+          <span class="info-value">{{ tokenInfo.remainingTokens | number }}</span>
+        </div>
+        <div class="usage-bar">
+          <div
+            class="usage-progress"
+            [style.width.%]="(tokenInfo.tokensUsed / tokenInfo.monthlyLimit) * 100">
+          </div>
+        </div>
+        <p class="usage-note">
+          Token usage resets on {{ formatDate(tokenInfo.nextResetDate) }}. Upgrade your plan for more tokens.
+        </p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

@@ -1,12 +1,16 @@
 import { animate, style, transition, trigger } from '@angular/animations';
-import { AsyncPipe, NgIf, DecimalPipe } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
+  AfterViewInit,
   ChangeDetectorRef,
   Component,
-  OnInit,
+  ElementRef,
+  HostListener,
   OnDestroy,
+  OnInit,
+  ViewChild,
   computed,
-  signal
+  signal,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,676 +18,1023 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, distinctUntilChanged, debounceTime, switchMap, of, EMPTY } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import {
+  Observable,
+  Subject,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  map,
+  merge,
+  switchMap,
+  takeUntil,
+  of,
+  catchError,
+} from 'rxjs';
 import { VideoFineTuningConfig } from '../../models/types';
 import {
   ApiService,
   RewriteRequest,
-  RewriteResponse,
   SummariseResponse,
-  YouTubeSummariseRequest,
   TokenCountResponse,
+  YouTubeSummariseRequest,
 } from '../../services/api.service';
-import { DrawerService } from '../../services/drawer.service';
 import { LoggerService } from '../../services/logger.service';
+import { MultilineInputComponent } from '../multiline-input/multiline-input.component';
+import { RewriteFineTuningComponent } from '../rewrite-fine-tuning/rewrite-fine-tuning.component';
+import { RewrittenSummaryComponent } from '../rewritten-summary/rewritten-summary.component';
 import { SummaryResultComponent } from '../summary-result/summary-result.component';
 import { YoutubeFineTuningComponent } from '../youtube-fine-tuning/youtube-fine-tuning.component';
 import { YoutubeVideoPreviewComponent } from '../youtube-video-preview/youtube-video-preview.component';
-import { MultilineInputComponent } from '../multiline-input/multiline-input.component';
+import { TokenService } from '../../services/token.service';
+import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component';
+
+// ============================================================================
+// Constants and Configuration
+// ============================================================================
+const YOUTUBE_URL_REGEX =
+  /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|m\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})(?:\S+)?$/;
+const TOKEN_COUNTING_DEBOUNCE_MS = 1000;
+const CLIPBOARD_FEEDBACK_DURATION_MS = 2000;
+
+const ERROR_MESSAGES = {
+  INVALID_URL: 'Please enter a valid YouTube URL',
+  VIDEO_NOT_FOUND: 'Video not found or has been removed',
+  VIDEO_RESTRICTED: 'Video owner has restricted playback on other websites',
+  VIDEO_ACCESS_RESTRICTED:
+    'YouTube video access has been restricted on other websites',
+  HTML5_ERROR: 'HTML5 player error occurred',
+  GENERIC_PLAYER_ERROR: (code: number) =>
+    `YouTube player error occurred (Error code: ${code})`,
+  GENERIC_API_ERROR: 'An error occurred while processing your request',
+};
+
+// ============================================================================
+// Component Definition
+// ============================================================================
 @Component({
   selector: 'app-youtube',
+  standalone: true,
   imports: [
-    MatInputModule,
+    NgIf,
+    ReactiveFormsModule,
     MatFormFieldModule,
+    MatInputModule,
     MatButtonModule,
     MatIconModule,
-    ReactiveFormsModule,
-    NgIf,
-    AsyncPipe,
-    DecimalPipe,
+    SummaryResultComponent,
     YoutubeVideoPreviewComponent,
     YoutubeFineTuningComponent,
-    MatTooltipModule,
-    SummaryResultComponent,
     MultilineInputComponent,
+    MatTooltipModule,
+    TokenBadgeComponent,
+    RewriteFineTuningComponent,
+    RewrittenSummaryComponent,
   ],
   templateUrl: './youtube.component.html',
   styleUrl: './youtube.component.scss',
   animations: [
     trigger('slideInOut', [
       transition(':enter', [
-        style({ transform: 'translateY(100%)', opacity: 0 }),
+        style({ transform: 'translateY(50%)', opacity: 0 }),
         animate(
-          '200ms ease-out',
-          style({ transform: 'translateY(0)', opacity: 1 })
+          '300ms ease-out',
+          style({ transform: 'translateY(calc(-100% - 10px))', opacity: 1 })
         ),
       ]),
       transition(':leave', [
         animate(
-          '200ms ease-in',
-          style({ transform: 'translateY(100%)', opacity: 0 })
+          '300ms ease-in',
+          style({ transform: 'translateY(50%)', opacity: 0 })
         ),
       ]),
     ]),
   ],
 })
-export class YoutubeComponent implements OnInit, OnDestroy {
-  // YouTube URL regex pattern
-  private youtubePattern =
-    /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}([&?].*)?$/;
+export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
+  // ============================================================================
+  // State Management - UI States
+  // ============================================================================
+  readonly isLoadingVideo = signal(false);
+  readonly isLoadingSummary = signal(false);
+  readonly isSubmitting = signal(false);
+  readonly isRegenerating = signal(false);
+  readonly isRewriteLoading = signal(false);
+  readonly isRegeneratingRewrite = signal(false);
+  readonly isLoadingTokens = signal(false);
+  readonly showFineTuningInput = signal(false);
+  readonly isFineTuningExpanded = signal(false);
+  readonly isRewriteFineTuningExpanded = signal(false);
+  readonly copyButtonText = signal('Copy');
+  readonly bottomSpaceHeight = signal(0);
 
-  inputControl = new FormControl('', [
+  // ============================================================================
+  // State Management - Data States
+  // ============================================================================
+  readonly summaryResult = signal<SummariseResponse | null>(null);
+  readonly rewrittenSummary = signal<SummariseResponse | null>(null);
+  readonly videoDuration = signal<number | null>(null);
+  readonly tokenCount = signal<number | null>(null);
+  readonly fineTuningConfig = signal<VideoFineTuningConfig | null>(null);
+
+  // Project tracking signals
+  readonly currentProjectId = signal<string | null>(null);
+  readonly existingProjectId = signal<string | null>(null);
+
+  // Store the original configs used for generating summaries
+  private originalSummaryConfig: VideoFineTuningConfig | null = null;
+  private originalSummaryUrl: string | null = null;
+
+  // Store the original custom prompt used for rewrite
+  private originalRewritePrompt: string | null = null;
+  readonly customPromptText = signal<string>('');
+
+  // ============================================================================
+  // State Management - Error States
+  // ============================================================================
+  readonly errorMessage150 = signal<string | null>(null);
+  readonly submitError = signal<string | null>(null);
+  readonly tokenCountError = signal<string | null>(null);
+
+  // ============================================================================
+  // Form Control
+  // ============================================================================
+  readonly inputControl = new FormControl('', [
     Validators.required,
-    Validators.pattern(this.youtubePattern),
+    Validators.pattern(YOUTUBE_URL_REGEX),
   ]);
 
-  videoDuration = signal<number | null>(null);
-  errorMessage150 = signal<string | null>(null);
-  isFineTuningExpanded = signal<boolean>(false);
-  isLoadingVideo = signal<boolean>(false);
-  isSubmitting = signal<boolean>(false);
-  summaryResult = signal<SummariseResponse | null>(null);
-  submitError = signal<string | null>(null);
-  isRegenerating = signal<boolean>(false);
-  isLoadingSummary = signal<boolean>(false);
-  copyButtonText = signal<string>('Copy');
-  fineTuningConfig = signal<VideoFineTuningConfig | null>({
-    startSeconds: 0,
-    endSeconds: 0,
-    fps: 1,
-    customPrompt: '',
-  });
-
-  // Token counting signals
-  tokenCount = signal<number | null>(null);
-  isLoadingTokens = signal<boolean>(false);
-  private tokenCountingTimeout: any = null;
-
-  // Signal to track input control state for reactive computed properties
-  inputState = signal({ valid: false, value: '' });
-
-  // Persistent fine-tuning state in memory
-  private persistentFineTuningConfig: VideoFineTuningConfig | null = null;
-  private persistentIsExpanded: boolean = false;
-  private persistentVideoDuration: number | null = null; // Track the duration when config was saved
-
-  // Drawer state observables
-  isDesktopDrawerCollapsed$: Observable<boolean>;
-
-  // Fine-tuning input state
-  showFineTuningInput = signal<boolean>(false);
-
-  // Computed signal to detect if user has custom fine tuning config
-  hasCustomFineTuningConfig = computed(() => {
-    const config = this.fineTuningConfig();
-    if (!config) return false;
-
-    const duration = this.videoDuration();
-    if (!duration) return false;
-
-    // Check if any value differs from defaults
-    const hasCustomStart = config.startSeconds > 0;
-    const hasCustomEnd = config.endSeconds < duration;
-    const hasCustomFps = config.fps !== 1;
-    const hasCustomPrompt = config.customPrompt.trim() !== '';
-
-    return hasCustomStart || hasCustomEnd || hasCustomFps || hasCustomPrompt;
-  });
-
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private logger: LoggerService,
-    private drawerService: DrawerService,
-    private apiService: ApiService
-  ) {
-    this.isDesktopDrawerCollapsed$ = this.drawerService.desktopDrawerCollapsed$;
-  }
-
-  ngOnInit() {
-    // Subscribe to input changes for proper signal updates
-    this.inputControl.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe(() => {
-        // Update input state signal for reactive computed properties
-        this.inputState.set({
-          valid: this.inputControl.valid,
-          value: this.inputControl.value || '',
-        });
-
-        this.videoDuration.set(null);
-        this.errorMessage150.set(null);
-        this.summaryResult.set(null);
-        this.isSubmitting.set(false);
-        this.tokenCount.set(null);
-
-        // Set loading state for valid URLs only
-        if (
-          this.inputControl.valid &&
-          this.inputControl.value &&
-          this.inputControl.value.trim() !== ''
-        ) {
-          this.isLoadingVideo.set(true);
-        } else {
-          this.isLoadingVideo.set(false);
-        }
-
-        // Handle fine-tuning state based on input validity and expansion state
-        if (this.inputControl.invalid) {
-          // Reset everything if input becomes invalid
-          this.fineTuningConfig.set(null);
-          this.isFineTuningExpanded.set(false);
-          this.persistentFineTuningConfig = null;
-          this.persistentIsExpanded = false;
-          this.persistentVideoDuration = null;
-          this.isLoadingVideo.set(false);
-        } else if (this.inputControl.valid && !this.isFineTuningExpanded()) {
-          // If fine tuning is collapsed and URL changed, reset config
-          this.fineTuningConfig.set(null);
-          this.persistentFineTuningConfig = null;
-          this.persistentVideoDuration = null;
-        }
-        // If expanded, preserve current config (existing behavior)
-        // Manually trigger change detection to update button states immediately
-        this.cdr.detectChanges();
-      });
-
-    // Initialize input state
-    this.inputState.set({
-      valid: this.inputControl.valid,
-      value: this.inputControl.value || '',
-    });
-
-    // Setup debounced token counting for URL and fine-tuning changes
-    this.setupTokenCounting();
-  }
-
-  ngOnDestroy() {
-    // Clean up timeout to prevent memory leaks
-    if (this.tokenCountingTimeout) {
-      clearTimeout(this.tokenCountingTimeout);
-    }
-  }
-
-  private setupTokenCounting() {
-    // Create a combined observable for URL and fine-tuning changes
-    const urlChanges$ = this.inputControl.valueChanges.pipe(
-      distinctUntilChanged()
-    );
-
-    // Subscribe to URL changes with debouncing for token counting
-    urlChanges$
-      .pipe(
-        debounceTime(1500),
-        switchMap(() => {
-          if (
-            this.inputControl.valid &&
-            this.inputControl.value &&
-            this.videoDuration()
-          ) {
-            this.isLoadingTokens.set(true);
-            return this.countTokens();
-          } else {
-            this.tokenCount.set(null);
-            this.isLoadingTokens.set(false);
-            return EMPTY;
-          }
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.tokenCount.set(response.totalTokens);
-          this.isLoadingTokens.set(false);
-        },
-        error: (error) => {
-          this.logger.error('Token counting failed:', error);
-          this.tokenCount.set(null);
-          this.isLoadingTokens.set(false);
-        },
-      });
-  }
-
-  private countTokens(): Observable<TokenCountResponse> {
-    const request: YouTubeSummariseRequest = {
-      url: this.inputControl.value || '',
-    };
-
-    // Add fine-tuning configuration if available
-    const config = this.fineTuningConfig();
-    if (config && this.isFineTuningExpanded()) {
-      if (config.customPrompt) {
-        request.customPrompt = config.customPrompt;
-      }
-      if (config.startSeconds !== undefined && config.startSeconds > 0) {
-        request.startSeconds = config.startSeconds;
-      }
-      if (config.endSeconds !== undefined && config.endSeconds > 0) {
-        request.endSeconds = config.endSeconds;
-      }
-      if (config.fps !== undefined && config.fps > 0) {
-        request.fps = config.fps;
-      }
-    }
-
-    return this.apiService.countYouTubeTokens(request);
-  }
-
-  onDuration(duration: number) {
-    this.logger.log('Received duration:', duration, 'seconds');
-
-    // Restore persistent fine-tuning state if available
-    if (this.persistentFineTuningConfig && this.persistentVideoDuration) {
-      const config = this.persistentFineTuningConfig;
-      const oldDuration = this.persistentVideoDuration;
-
-      // Smart restoration logic - don't persist default values
-      let startSeconds = 0;
-      let endSeconds = duration;
-
-      // Only restore startSeconds if it wasn't at default (0) in the previous video
-      if (config.startSeconds > 0) {
-        startSeconds = Math.min(config.startSeconds, duration);
-      }
-
-      // Only restore endSeconds if it wasn't at default (full duration) in the previous video
-      if (config.endSeconds < oldDuration) {
-        endSeconds = Math.min(config.endSeconds, duration);
-      }
-
-      // Ensure start is not greater than end after adjustment
-      if (startSeconds >= endSeconds) {
-        startSeconds = 0;
-        endSeconds = duration;
-      }
-
-      const adjustedConfig: VideoFineTuningConfig = {
-        ...config,
-        startSeconds,
-        endSeconds,
-      };
-
-      this.fineTuningConfig.set(adjustedConfig);
-      this.isFineTuningExpanded.set(this.persistentIsExpanded);
-    } else {
-      // First time or no persistent config - set default
-      this.fineTuningConfig.set({
-        startSeconds: 0,
-        endSeconds: duration,
-        fps: 1,
-        customPrompt: '',
-      });
-    }
-
-    this.videoDuration.set(duration);
-    this.isLoadingVideo.set(false);
-
-    // Trigger token counting when video duration is available
-    if (this.inputControl.valid && this.inputControl.value) {
-      this.isLoadingTokens.set(true);
-      this.countTokens().subscribe({
-        next: (response) => {
-          this.tokenCount.set(response.totalTokens);
-          this.isLoadingTokens.set(false);
-        },
-        error: (error) => {
-          this.logger.error('Token counting failed:', error);
-          this.tokenCount.set(null);
-          this.isLoadingTokens.set(false);
-        },
-      });
-    }
-  }
-
-  onVideoError(errorCode: number) {
-    this.logger.log('=== YouTube component onVideoError called ===');
-    this.logger.log('YouTube player error:', errorCode);
-
-    let errorMessage: string;
-
-    switch (errorCode) {
-      case 2:
-        errorMessage = 'Invalid video ID or video not found';
-        break;
-      case 5:
-        errorMessage = 'HTML5 player error occurred';
-        break;
-      case 100:
-        errorMessage = 'Video not found or has been removed';
-        break;
-      case 101:
-        errorMessage = 'Video owner has restricted playback on other websites';
-        break;
-      case 150:
-        errorMessage =
-          'YouTube video access has been restricted on other websites';
-        break;
-      default:
-        errorMessage = `YouTube player error occurred (Error code: ${errorCode})`;
-        break;
-    }
-
-    this.logger.log('Setting error message:', errorMessage);
-    this.errorMessage150.set(errorMessage);
-
-    // Collapse fine-tuning when video has errors
-    this.isFineTuningExpanded.set(false);
-    this.isLoadingVideo.set(false);
-  }
-
-  onSubmit() {
-    if (
-      this.inputControl.valid &&
-      this.videoDuration() &&
-      this.videoDuration()! > 0
-    ) {
-      this.logger.log(
-        'Submitting YouTube URL:',
-        this.inputControl.value,
-        'Duration:',
-        this.videoDuration()
-      );
-
-      this.isSubmitting.set(true);
-      this.submitError.set(null);
-      this.summaryResult.set(null);
-      this.isLoadingSummary.set(true);
-
-      const request: YouTubeSummariseRequest = {
-        url: this.inputControl.value || '',
-      };
-
-      // Add fine-tuning configuration if available
-      const config = this.fineTuningConfig();
-      if (config && this.isFineTuningExpanded()) {
-        if (config.customPrompt) {
-          request.customPrompt = config.customPrompt;
-        }
-        if (config.startSeconds !== undefined && config.startSeconds > 0) {
-          request.startSeconds = config.startSeconds;
-        }
-        if (config.endSeconds !== undefined && config.endSeconds > 0) {
-          request.endSeconds = config.endSeconds;
-        }
-        if (config.fps !== undefined && config.fps > 0) {
-          request.fps = config.fps;
-        }
-      }
-
-      this.apiService.summariseYouTube(request).subscribe({
-        next: (response) => {
-          this.logger.log('YouTube summarisation successful:', response);
-          this.summaryResult.set(response);
-          this.isSubmitting.set(false);
-          this.isLoadingSummary.set(false);
-        },
-        error: (error) => {
-          this.logger.error('YouTube summarisation failed:', error);
-          this.submitError.set(
-            error.error?.message ||
-              error.message ||
-              'Failed to summarise YouTube video'
-          );
-          this.isSubmitting.set(false);
-          this.isLoadingSummary.set(false);
-        },
-      });
-    }
-  }
-
-  toggleFineTuning() {
-    const newExpandedState = !this.isFineTuningExpanded();
-    this.isFineTuningExpanded.set(newExpandedState);
-    // Save expanded state to persistent memory
-    this.persistentIsExpanded = newExpandedState;
-
-    // When collapsing, preserve the config instead of resetting
-    if (!newExpandedState) {
-      // Save current config to persistent memory if it exists
-      const currentConfig = this.fineTuningConfig();
-      if (currentConfig) {
-        this.persistentFineTuningConfig = { ...currentConfig };
-        this.persistentVideoDuration = this.videoDuration();
-      }
-    }
-  }
-
-  onFineTuningConfigChange(config: VideoFineTuningConfig) {
-    this.fineTuningConfig.set(config);
-    // Save config to persistent memory
-    this.persistentFineTuningConfig = { ...config };
-    this.persistentVideoDuration = this.videoDuration();
-    this.logger.log('Fine-tuning config updated:', config);
-
-    // Trigger debounced token counting when fine-tuning config changes
-    if (
-      this.inputControl.valid &&
-      this.inputControl.value &&
-      this.videoDuration()
-    ) {
-      // Cancel any existing debounced token counting
-      if (this.tokenCountingTimeout) {
-        clearTimeout(this.tokenCountingTimeout);
-      }
-
-      this.isLoadingTokens.set(true);
-
-      // Debounce token counting for 1500ms
-      this.tokenCountingTimeout = setTimeout(() => {
-        this.countTokens().subscribe({
-          next: (response) => {
-            this.tokenCount.set(response.totalTokens);
-            this.isLoadingTokens.set(false);
-          },
-          error: (error) => {
-            this.logger.error('Token counting failed:', error);
-            this.tokenCount.set(null);
-            this.isLoadingTokens.set(false);
-          },
-        });
-      }, 1500);
-    }
-  }
-
-  copySummary() {
-    const summary = this.summaryResult()?.summary;
-    if (summary) {
-      navigator.clipboard
-        .writeText(summary)
-        .then(() => {
-          this.logger.log('Summary copied to clipboard');
-          this.copyButtonText.set('Copied!');
-          // Reset button text after 2 seconds
-          setTimeout(() => {
-            this.copyButtonText.set('Copy');
-          }, 2000);
-        })
-        .catch((err) => {
-          this.logger.error('Failed to copy summary:', err);
-        });
-    }
-  }
-
-  onRegenerateSummary() {
-    if (
-      this.inputControl.valid &&
-      this.videoDuration() &&
-      this.videoDuration()! > 0
-    ) {
-      this.logger.log('Regenerating summary with current fine-tuning config');
-
-      this.isRegenerating.set(true);
-      this.submitError.set(null);
-
-      const request: YouTubeSummariseRequest = {
-        url: this.inputControl.value || '',
-      };
-
-      // Add fine-tuning configuration if available
-      const config = this.fineTuningConfig();
-      if (config && this.isFineTuningExpanded()) {
-        if (config.customPrompt) {
-          request.customPrompt = config.customPrompt;
-        }
-        if (config.startSeconds !== undefined && config.startSeconds > 0) {
-          request.startSeconds = config.startSeconds;
-        }
-        if (config.endSeconds !== undefined && config.endSeconds > 0) {
-          request.endSeconds = config.endSeconds;
-        }
-        if (config.fps !== undefined && config.fps > 0) {
-          request.fps = config.fps;
-        }
-      }
-
-      this.apiService.summariseYouTube(request).subscribe({
-        next: (response) => {
-          this.logger.log('YouTube regeneration successful:', response);
-          this.summaryResult.set(response);
-          this.isRegenerating.set(false);
-        },
-        error: (error) => {
-          this.logger.error('YouTube regeneration failed:', error);
-          this.submitError.set(
-            error.error?.message ||
-              error.message ||
-              'Failed to regenerate YouTube summary'
-          );
-          this.isRegenerating.set(false);
-        },
-      });
-    }
-  }
-
-  onRewriteSummary() {
-    const currentSummary = this.summaryResult();
-    if (!currentSummary?.requestId) {
-      this.logger.error('No summary available to rewrite');
-      return;
-    }
-
-    const rewritePrompt = prompt(
-      'How would you like to rewrite the summary?',
-      'Make it more concise and focus on key points'
-    );
-
-    if (!rewritePrompt || rewritePrompt.trim() === '') {
-      this.logger.log('Rewrite cancelled by user');
-      return;
-    }
-
-    this.logger.log('Rewriting summary with prompt:', rewritePrompt);
-    this.isRegenerating.set(true);
-    this.submitError.set(null);
-
-    const request: RewriteRequest = {
-      requestId: currentSummary.requestId,
-      prompt: rewritePrompt.trim(),
-    };
-
-    this.apiService.rewriteSummary(request).subscribe({
-      next: (response: RewriteResponse) => {
-        this.logger.log('Summary rewrite successful:', response);
-        this.summaryResult.set(response);
-        this.isRegenerating.set(false);
-      },
-      error: (error) => {
-        this.logger.error('Summary rewrite failed:', error);
-        this.submitError.set(
-          error.error?.message || error.message || 'Failed to rewrite summary'
-        );
-        this.isRegenerating.set(false);
-      },
-    });
-  }
-
-  onFineTuningSummary() {
-    const currentSummary = this.summaryResult();
-    if (!currentSummary?.requestId) {
-      this.logger.error('No summary available for fine-tuning');
-      return;
-    }
-
-    this.logger.log('Opening fine-tuning input dialog');
-    this.showFineTuningInput.set(true);
-  }
-
-  onClearSummary() {
-    this.summaryResult.set(null);
-    this.isLoadingSummary.set(false);
-  }
-
-  errorMessage = computed(() => {
+  // ============================================================================
+  // Computed Properties
+  // ============================================================================
+  readonly isValidUrl = () => this.inputControl.valid;
+
+  readonly errorMessage = computed(() => {
     if (this.inputControl.hasError('required')) {
       return 'YouTube URL is required';
     }
     if (this.inputControl.hasError('pattern')) {
-      return 'Please enter a valid YouTube URL';
+      return ERROR_MESSAGES.INVALID_URL;
     }
-    return '';
+    return null;
   });
 
-  isValidUrl = computed(() => {
-    const inputState = this.inputState();
-    const isValid =
-      inputState.valid &&
-      inputState.value &&
-      inputState.value.trim() !== '' &&
-      !!this.videoDuration() &&
-      !this.errorMessage150();
-    this.logger.log('isValidUrl check:', {
-      controlValid: inputState.valid,
-      hasValue: !!inputState.value,
-      valueNotEmpty: inputState.value ? inputState.value.trim() !== '' : false,
-      noError150: !this.errorMessage150(),
-      finalResult: isValid,
-    });
-    return isValid;
+  readonly hasCustomFineTuningConfig = computed(() => {
+    const config = this.fineTuningConfig();
+    if (!config) return false;
+    return !!(
+      config.customPrompt ||
+      (config.startSeconds && config.startSeconds > 0) ||
+      (config.endSeconds && config.endSeconds > 0) ||
+      (config.fps && config.fps > 0)
+    );
   });
 
-  // Calculate tokens based on summary length
-  calculateSummaryTokens(): number {
-    const summary = this.summaryResult()?.summary;
+  readonly calculateSummaryTokens = computed(() => {
+    const summary = this.summaryResult();
     if (!summary) return 0;
-    return Math.round((summary.length / 4) * 1.25);
+    const text = summary.summary || '';
+    return Math.ceil(text.length / 4);
+  });
+
+  // ============================================================================
+  // Private Members
+  // ============================================================================
+  private readonly destroy$ = new Subject<void>();
+  private readonly fineTuningConfigSubject =
+    new Subject<VideoFineTuningConfig | null>();
+  private readonly durationChangesSubject = new Subject<void>();
+  private persistentFineTuningConfig: VideoFineTuningConfig | null = null;
+
+  // ViewChild and ResizeObserver for dynamic bottom space
+  @ViewChild('inputCard') inputCardRef!: ElementRef<HTMLElement>;
+  private resizeObserver?: ResizeObserver;
+
+  // ============================================================================
+  // Constructor and Lifecycle
+  // ============================================================================
+  constructor(
+    private apiService: ApiService,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
+    private logger: LoggerService,
+    private tokenService: TokenService
+  ) {
+    this._initializeFromQueryParams();
   }
 
-  // Handle fine-tuning input submission
-  onFineTuningSubmit(input: string) {
-    const currentSummary = this.summaryResult();
-    if (!currentSummary?.requestId) {
-      this.logger.error('No summary available for fine-tuning');
-      return;
+  ngOnInit(): void {
+    this._setupTokenCounting();
+    this._setupFineTuningPersistence();
+  }
+
+  ngAfterViewInit(): void {
+    // Initialize ResizeObserver
+    this.resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        this.bottomSpaceHeight.set(entry.target.clientHeight);
+      }
+    });
+
+    // Start observing the input card
+    if (this.inputCardRef?.nativeElement) {
+      this.resizeObserver.observe(this.inputCardRef.nativeElement);
+
+      // Set initial height after a tick to ensure rendered
+      setTimeout(() => {
+        this.bottomSpaceHeight.set(
+          this.inputCardRef.nativeElement.offsetHeight
+        );
+      }, 0);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.resizeObserver?.disconnect();
+  }
+
+  // Optional: Handle window resize
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (this.inputCardRef?.nativeElement) {
+      this.bottomSpaceHeight.set(this.inputCardRef.nativeElement.offsetHeight);
+    }
+  }
+
+  // ============================================================================
+  // Initialization Methods
+  // ============================================================================
+  private _initializeFromQueryParams(): void {
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((params) => {
+        if (params['url']) {
+          this.inputControl.setValue(params['url']);
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  private _setupFineTuningPersistence(): void {
+    this.fineTuningConfigSubject
+      .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe((config) => {
+        if (config && this.isFineTuningExpanded()) {
+          this.persistentFineTuningConfig = { ...config };
+        }
+      });
+  }
+
+  // ============================================================================
+  // Token Counting Logic
+  // ============================================================================
+  /**
+   * Sets up the token counting system with proper loading states and error handling.
+   *
+   * Flow:
+   * 1. User enters URL → Immediate loading indicator
+   * 2. Video duration loads → Token counting starts
+   * 3. Token count displayed → Loading indicator hidden
+   *
+   * Error scenarios handled:
+   * - Invalid URL → Reset everything
+   * - Video error → Stop loading, show error
+   * - Token counting API error → Stop loading, allow retry
+   */
+  private _setupTokenCounting(): void {
+    // Set up URL change listener for immediate loading state
+    this._setupUrlChangeListener();
+
+    // Set up token counting triggers
+    this._setupTokenCountingTriggers();
+  }
+
+  /**
+   * Handles URL changes and manages immediate loading feedback
+   */
+  private _setupUrlChangeListener(): void {
+    let previousUrl: string | null = null;
+
+    this.inputControl.valueChanges
+      .pipe(
+        // Use distinctUntilChanged with custom comparison to handle paste of same URL
+        distinctUntilChanged((prev, curr) => {
+          // Treat empty and null as same
+          if (!prev && !curr) return true;
+          // For valid URLs, always treat as different to retrigger loading
+          if (this.inputControl.valid) return false;
+          // For invalid URLs, use standard comparison
+          return prev === curr;
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((currentUrl) => {
+        // Check if URL actually changed (not just validation state)
+        const urlChanged = currentUrl !== previousUrl;
+        previousUrl = currentUrl;
+
+        if (urlChanged) {
+          // Reset fine-tuning config if collapsed
+          if (!this.isFineTuningExpanded()) {
+            this._resetFineTuningConfig();
+          }
+        }
+
+        if (this.inputControl.valid) {
+          // Valid URL entered - show loading immediately
+          this._startTokenLoadingState();
+        } else {
+          // Invalid URL - hide loading and reset
+          this._resetTokenCount();
+        }
+      });
+  }
+
+  /**
+   * Starts the loading state for token counting
+   * Called immediately when a valid URL is entered
+   */
+  private _startTokenLoadingState(): void {
+    this.isLoadingTokens.set(true);
+    this.tokenCount.set(null);
+
+    // Clear any existing errors and duration for fresh start
+    this.videoDuration.set(null);
+    this.errorMessage150.set(null);
+    this.tokenCountError.set(null);
+  }
+
+  /**
+   * Sets up triggers that initiate actual token counting
+   * Token counting only happens after duration is available
+   */
+  private _setupTokenCountingTriggers(): void {
+    // Duration changes trigger token counting
+    const durationChanges$ = this.durationChangesSubject.pipe(
+      map(() => ({ source: 'duration' }))
+    );
+
+    // Config changes trigger token counting (only if we have duration)
+    const configChanges$ = this.fineTuningConfigSubject.pipe(
+      filter(() => this._shouldCountTokens()),
+      map(() => ({ source: 'config' }))
+    );
+
+    // Combine all triggers
+    const tokenCountTriggers$ = merge(durationChanges$, configChanges$);
+
+    // Perform debounced token counting with error recovery
+    tokenCountTriggers$
+      .pipe(
+        debounceTime(TOKEN_COUNTING_DEBOUNCE_MS),
+        switchMap(() => this._performTokenCounting()),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (result) => this._handleTokenCountResult(result),
+        error: (error) => this._handleTokenCountError(error),
+      });
+  }
+
+  private _shouldCountTokens(): boolean {
+    return !!(
+      this.inputControl.valid &&
+      this.inputControl.value &&
+      this.videoDuration() &&
+      this.videoDuration()! > 0
+    );
+  }
+
+  private _performTokenCounting(): Observable<any> {
+    if (!this._shouldCountTokens()) {
+      return of({ success: false, data: null });
     }
 
-    this.logger.log('Fine-tuning summary with input:', input);
-    this.isRegenerating.set(true);
-    this.submitError.set(null);
-    this.showFineTuningInput.set(false);
+    return this._countTokens().pipe(
+      map((response) => ({ success: true, data: response })),
+      catchError((error) => {
+        this.logger.error('Token counting failed:', error);
+        return of({ success: false, error });
+      })
+    );
+  }
 
-    const request: RewriteRequest = {
-      requestId: currentSummary.requestId,
-      prompt: input,
+  private _countTokens(): Observable<TokenCountResponse> {
+    const request = this._buildYouTubeRequest();
+    return this.apiService.countYouTubeTokens(request);
+  }
+
+  private _handleTokenCountResult(result: any): void {
+    if (result.success && 'data' in result && result.data) {
+      this.tokenCount.set(result.data.totalTokens);
+      // Clear any token counting errors on success
+      this.tokenCountError.set(null);
+    } else if (result.error) {
+      // Handle token counting API errors
+      this._handleTokenCountingApiError(result.error);
+    } else {
+      this.tokenCount.set(null);
+    }
+    this.isLoadingTokens.set(false);
+  }
+
+  private _handleTokenCountError(error: any): void {
+    this.logger.error('Unexpected error in token counting:', error);
+    this._handleTokenCountingApiError(error);
+  }
+
+  private _handleTokenCountingApiError(error: any): void {
+    // Extract error message from the API response
+    let errorMessage = 'Unable to estimate token count';
+
+    if (error?.error?.error) {
+      errorMessage = error.error.error;
+    } else if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
+
+    // Set error message for display
+    this.tokenCountError.set(errorMessage);
+    this._resetTokenCount();
+  }
+
+  private _resetTokenCount(): void {
+    this.tokenCount.set(null);
+    this.isLoadingTokens.set(false);
+  }
+
+  // ============================================================================
+  // Request Building
+  // ============================================================================
+  private _buildYouTubeRequest(): YouTubeSummariseRequest {
+    const request: YouTubeSummariseRequest = {
+      url: this.inputControl.value || '',
     };
 
-    this.apiService.rewriteSummary(request).subscribe({
-      next: (response: RewriteResponse) => {
-        this.logger.log('Fine-tuning rewrite successful:', response);
-        this.summaryResult.set(response);
-        this.isRegenerating.set(false);
-      },
-      error: (error) => {
-        this.logger.error('Fine-tuning rewrite failed:', error);
-        this.submitError.set(
-          error.error?.message ||
-            error.message ||
-            'Failed to apply fine-tuning to summary'
-        );
-        this.isRegenerating.set(false);
-      },
-    });
+    const config = this._getActiveFineTuningConfig();
+    if (config) {
+      this._applyFineTuningToRequest(request, config);
+    }
+
+    // Ensure startSeconds defaults to 0 if not set
+    if (request.startSeconds === undefined) {
+      request.startSeconds = 0;
+    }
+
+    return request;
   }
 
-  // Handle fine-tuning input cancellation
-  onFineTuningCancel() {
+  private _buildYouTubeRequestWithConfig(
+    config: VideoFineTuningConfig | null,
+    url: string | null
+  ): YouTubeSummariseRequest {
+    const request: YouTubeSummariseRequest = {
+      url: url || this.inputControl.value || '',
+    };
+
+    if (config) {
+      this._applyFineTuningToRequest(request, config);
+    }
+
+    // Ensure startSeconds defaults to 0 if not set
+    if (request.startSeconds === undefined) {
+      request.startSeconds = 0;
+    }
+
+    return request;
+  }
+
+  private _getActiveFineTuningConfig(): VideoFineTuningConfig | null {
+    let config = this.fineTuningConfig();
+
+    // Use persistent config if fine-tuning is collapsed
+    if (!this.isFineTuningExpanded() && this.persistentFineTuningConfig) {
+      config = this.persistentFineTuningConfig;
+    }
+
+    return config;
+  }
+
+  private _applyFineTuningToRequest(
+    request: YouTubeSummariseRequest,
+    config: VideoFineTuningConfig
+  ): void {
+    if (config.customPrompt) {
+      request.customPrompt = config.customPrompt;
+    }
+    // Always set startSeconds to a defined value (default 0)
+    request.startSeconds = config.startSeconds ?? 0;
+    if (config.endSeconds !== undefined && config.endSeconds > 0) {
+      request.endSeconds = config.endSeconds;
+    }
+    if (config.fps !== undefined && config.fps > 0) {
+      request.fps = config.fps;
+    }
+  }
+
+  // ============================================================================
+  // Error Handling
+  // ============================================================================
+  private _handleApiError(error: any, context: string): void {
+    this.logger.error(`${context} failed:`, error);
+
+    const errorMessage = this._extractErrorMessage(error);
+    this.submitError.set(errorMessage);
+
+    // Reset loading states
+    this.isSubmitting.set(false);
+    this.isLoadingSummary.set(false);
+    this.isRegenerating.set(false);
+    this.isRewriteLoading.set(false);
+    this.isRegeneratingRewrite.set(false);
+  }
+
+  private _extractErrorMessage(error: any): string {
+    // Handle format: {"error": "message"} - most common from our backend
+    if (error?.error?.error && typeof error.error.error === 'string') {
+      return error.error.error;
+    }
+
+    // Handle format: {"error": {"message": "..."}}
+    if (error?.error?.error?.message) {
+      return error.error.error.message;
+    }
+
+    // Handle format: {"message": "..."}
+    if (error?.error?.message) {
+      return error.error.message;
+    }
+
+    // Handle direct message
+    if (error?.message) {
+      return error.message;
+    }
+
+    // Handle specific HTTP status codes with user-friendly messages
+    if (error?.status) {
+      switch (error.status) {
+        case 401:
+          return 'Authentication required. Please sign in and try again.';
+        case 403:
+          return 'Access denied. Please check your permissions.';
+        case 404:
+          return 'Service not found. Please try again later.';
+        case 429:
+          return 'Too many requests. Please wait a moment and try again.';
+        case 500:
+        case 502:
+        case 503:
+          return 'Server error. Please try again later.';
+        default:
+          return ERROR_MESSAGES.GENERIC_API_ERROR;
+      }
+    }
+
+    return ERROR_MESSAGES.GENERIC_API_ERROR;
+  }
+
+  private _clearErrors(): void {
+    this.submitError.set(null);
+    this.errorMessage150.set(null);
+  }
+
+  private _clearAllResults(): void {
+    // Clear all summary and rewrite results
+    this.summaryResult.set(null);
+    this.rewrittenSummary.set(null);
+    this.isRewriteFineTuningExpanded.set(false);
+
+    // Clear stored original config
+    this.originalSummaryConfig = null;
+    this.originalSummaryUrl = null;
+    this.originalRewritePrompt = null;
+
+    // Clear errors
+    this._clearErrors();
+
+    // Reset loading states
+    this.isLoadingSummary.set(false);
+    this.isRewriteLoading.set(false);
+    this.isRegenerating.set(false);
+    this.isRegeneratingRewrite.set(false);
+  }
+
+  private _resetFineTuningConfig(): void {
+    // Reset fine-tuning configuration to defaults
+    this.fineTuningConfig.set(null);
+    this.persistentFineTuningConfig = null;
+
+    // Clear any custom prompt
+    this.customPromptText.set('');
+
+    // Close fine-tuning input if open
     this.showFineTuningInput.set(false);
+  }
+
+  // ============================================================================
+  // Public Event Handlers - Video Events
+  // ============================================================================
+  onDuration(duration: number): void {
+    this.logger.log('Video duration detected:', duration);
+    this.videoDuration.set(duration);
+    this.isLoadingVideo.set(false);
+    this._clearErrors();
+
+    // Trigger token counting now that duration is available
+    // Loading indicator is already showing from URL change
+    if (this._shouldCountTokens()) {
+      this.durationChangesSubject.next();
+    }
+  }
+
+  onVideoError(errorCode: number): void {
+    this.logger.log('YouTube player error:', errorCode);
+
+    const errorMessage = this._getVideoErrorMessage(errorCode);
+    this.errorMessage150.set(errorMessage);
+
+    // Reset states on video error
+    this.isFineTuningExpanded.set(false);
+    this.isLoadingVideo.set(false);
+    this.videoDuration.set(null);
+
+    // Stop loading indicator since we won't get a duration
+    this._resetTokenCount();
+  }
+
+  private _getVideoErrorMessage(errorCode: number): string {
+    switch (errorCode) {
+      case 2:
+        return ERROR_MESSAGES.INVALID_URL;
+      case 5:
+        return ERROR_MESSAGES.HTML5_ERROR;
+      case 100:
+        return ERROR_MESSAGES.VIDEO_NOT_FOUND;
+      case 101:
+      case 150:
+        return ERROR_MESSAGES.VIDEO_ACCESS_RESTRICTED;
+      default:
+        return ERROR_MESSAGES.GENERIC_PLAYER_ERROR(errorCode);
+    }
+  }
+
+  // ============================================================================
+  // Public Event Handlers - Summary Actions
+  // ============================================================================
+  onSubmit(): void {
+    if (!this._canSubmit()) return;
+
+    this._clearErrors();
+    this._resetSummaryStates();
+
+    // Store the current config and URL for this new summary
+    this.originalSummaryConfig = this._getActiveFineTuningConfig();
+    this.originalSummaryUrl = this.inputControl.value || '';
+
+    const request = this._buildYouTubeRequest();
+
+    this.apiService
+      .summariseYouTube(request)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => this._handleSummarySuccess(response),
+        error: (error) => this._handleApiError(error, 'YouTube summarisation'),
+      });
+  }
+
+  onRegenerateSummary(): void {
+    // For regeneration, we use the original URL and config, not the current input
+    if (!this.originalSummaryUrl) return;
+
+    this._clearErrors();
+    this.isRegenerating.set(true);
+
+    // Use the original config from when the summary was first generated
+    const request = this._buildYouTubeRequestWithConfig(
+      this.originalSummaryConfig,
+      this.originalSummaryUrl
+    );
+
+    // Add regeneration context if we have an existing project
+    const projectId = this.existingProjectId();
+    if (projectId) {
+      (request as any).clientContext = {
+        intent: 'regenerate' as const,
+        existingProjectId: projectId,
+      };
+    }
+
+    this.apiService
+      .summariseYouTube(request)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this._handleSummarySuccess(response);
+          this.isRegenerating.set(false);
+        },
+        error: (error) => {
+          this._handleApiError(error, 'Summary regeneration');
+          this.isRegenerating.set(false);
+        },
+      });
+  }
+
+  onClearSummary(): void {
+    this.summaryResult.set(null);
+    this.rewrittenSummary.set(null);
+    this._clearErrors();
+    // Clear stored original config
+    this.originalSummaryConfig = null;
+    this.originalSummaryUrl = null;
+    // Clear project tracking
+    this.currentProjectId.set(null);
+    this.existingProjectId.set(null);
+  }
+
+  copySummary(): void {
+    const summary = this.summaryResult()?.summary;
+    if (summary) {
+      this._copyToClipboard(summary);
+    }
+  }
+
+  private _canSubmit(): boolean {
+    return !!(
+      this.inputControl.valid &&
+      this.videoDuration() &&
+      this.videoDuration()! > 0
+    );
+  }
+
+  private _resetSummaryStates(): void {
+    this.isSubmitting.set(true);
+    this.submitError.set(null);
+    this.summaryResult.set(null);
+    this.isLoadingSummary.set(true);
+    this.rewrittenSummary.set(null);
+    this.isRewriteLoading.set(false);
+    // Clear project tracking for new submission
+    this.currentProjectId.set(null);
+    this.existingProjectId.set(null);
+  }
+
+  private _handleSummarySuccess(response: SummariseResponse): void {
+    this.logger.log('YouTube summarisation successful:', response);
+    this.summaryResult.set(response);
+    this.isSubmitting.set(false);
+    this.isLoadingSummary.set(false);
+
+    // Store project ID if present
+    if (response.projectId) {
+      this.currentProjectId.set(response.projectId);
+      this.existingProjectId.set(response.projectId);
+    }
+
+    // Refresh token info after successful API call
+    this.tokenService.fetchTokenInfo();
+  }
+
+  // ============================================================================
+  // Public Event Handlers - Rewrite Actions
+  // ============================================================================
+  onRewriteFineTuningExpandedChange(expanded: boolean): void {
+    this.isRewriteFineTuningExpanded.set(expanded);
+  }
+
+  onRewriteFineTuningSubmit(customPrompt: string): void {
+    const summary = this.summaryResult();
+    if (!summary || !summary.requestId) return;
+
+    this._clearErrors();
+    this.isRewriteLoading.set(true);
+    this.rewrittenSummary.set(null);
+
+    // Store the custom prompt for future regenerations (from Recreate button)
+    this.originalRewritePrompt = customPrompt || '';
+    this.customPromptText.set(customPrompt || '');
+
+    const request: RewriteRequest = {
+      requestId: summary.requestId,
+      customPrompt: customPrompt || '',
+    };
+
+    this.apiService
+      .rewriteSummary(request)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => this._handleRewriteSuccess(response),
+        error: (error) => this._handleApiError(error, 'Content rewrite'),
+      });
+  }
+
+  onRewriteAgain(): void {
+    const summary = this.summaryResult();
+    if (!summary || !summary.requestId) return;
+
+    this._clearErrors();
+    this.isRegeneratingRewrite.set(true);
+
+    // Always use the original prompt that was used for the last successful rewrite
+    // Don't use the current text in the input field
+    const promptToUse = this.originalRewritePrompt || '';
+
+    const request: RewriteRequest = {
+      requestId: summary.requestId,
+      customPrompt: promptToUse,
+    };
+
+    this.apiService
+      .rewriteSummary(request)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this._handleRewriteSuccess(response);
+          this.isRegeneratingRewrite.set(false);
+        },
+        error: (error) => {
+          this._handleApiError(error, 'Rewrite regeneration');
+          this.isRegeneratingRewrite.set(false);
+        },
+      });
+  }
+
+  onClearRewrittenSummary(): void {
+    this.rewrittenSummary.set(null);
+    this.isRewriteFineTuningExpanded.set(false);
+    // Clear stored rewrite prompt
+    this.originalRewritePrompt = null;
+  }
+
+  onCustomPromptSaved(prompt: string): void {
+    this.customPromptText.set(prompt);
+  }
+
+  copyRewrittenSummary(): void {
+    const rewritten = this.rewrittenSummary()?.summary;
+    if (rewritten) {
+      this._copyToClipboard(rewritten);
+    }
+  }
+
+  getRewrittenSummaryData(): any {
+    const rewritten = this.rewrittenSummary();
+    if (!rewritten) return null;
+
+    // Return in the format expected by the RewrittenSummaryComponent
+    return {
+      rewrittenSummary: rewritten.summary || '',
+      originalRequestId: rewritten.requestId || '',
+      tokensUsed: rewritten.tokensUsed,
+      processingTime: rewritten.processingTime,
+    };
+  }
+
+  private _handleRewriteSuccess(response: any): void {
+    this.logger.log('Content rewrite successful:', response);
+    // Convert RewriteResponse to SummariseResponse format
+    const summaryResponse: SummariseResponse = {
+      summary: response.summary,
+      tokensUsed: response.tokensUsed,
+      processingTime: response.processingTime,
+      requestId: response.requestId,
+    };
+    this.rewrittenSummary.set(summaryResponse);
+    this.isRewriteLoading.set(false);
+
+    // Don't collapse the rewrite fine-tuning panel if it's already expanded
+    // User may want to continue adjusting the prompt
+    // this.isRewriteFineTuningExpanded.set(false); // Removed to keep panel persistent
+
+    // Refresh token info after successful API call
+    this.tokenService.fetchTokenInfo();
+  }
+
+  // ============================================================================
+  // Public Event Handlers - Fine-Tuning Actions
+  // ============================================================================
+  toggleFineTuning(): void {
+    const newExpandedState = !this.isFineTuningExpanded();
+    this.isFineTuningExpanded.set(newExpandedState);
+
+    if (newExpandedState) {
+      const currentConfig = this.fineTuningConfig();
+      if (currentConfig) {
+        this.persistentFineTuningConfig = { ...currentConfig };
+      }
+    }
+  }
+
+  onFineTuningConfigChange(config: VideoFineTuningConfig): void {
+    this.fineTuningConfig.set(config);
+    this.persistentFineTuningConfig = { ...config };
+    this.logger.log('Fine-tuning config updated:', config);
+
+    // Show loading indicator immediately when config changes
+    if (this._shouldCountTokens()) {
+      this.isLoadingTokens.set(true);
+      this.tokenCount.set(null);
+      this.tokenCountError.set(null);
+    }
+
+    // Notify subscribers of config change (will trigger debounced token counting)
+    this.fineTuningConfigSubject.next(config);
+  }
+
+  onFineTuningSubmit(customPrompt: string): void {
+    this.logger.log('Fine-tuning custom prompt submitted:', customPrompt);
+    const currentConfig = this.fineTuningConfig() || {
+      startSeconds: 0,
+      endSeconds: 0,
+      fps: 0,
+    };
+    const updatedConfig: VideoFineTuningConfig = {
+      ...currentConfig,
+      customPrompt,
+    };
+    this.fineTuningConfig.set(updatedConfig);
+    this.showFineTuningInput.set(false);
+
+    // Show loading indicator immediately when config changes
+    if (this._shouldCountTokens()) {
+      this.isLoadingTokens.set(true);
+      this.tokenCount.set(null);
+      this.tokenCountError.set(null);
+    }
+
+    // Notify subscribers of config change (will trigger debounced token counting)
+    this.fineTuningConfigSubject.next(updatedConfig);
+  }
+
+  onFineTuningCancel(): void {
+    this.showFineTuningInput.set(false);
+  }
+
+  // ============================================================================
+  // Utility Methods
+  // ============================================================================
+  private _copyToClipboard(text: string): void {
+    try {
+      if (
+        typeof navigator !== 'undefined' &&
+        (navigator as any).clipboard?.writeText
+      ) {
+        (navigator as any).clipboard
+          .writeText(text)
+          .then(() => {
+            this.logger.log('Content copied to clipboard');
+            this.copyButtonText.set('Copied!');
+            setTimeout(
+              () => this.copyButtonText.set('Copy'),
+              CLIPBOARD_FEEDBACK_DURATION_MS
+            );
+          })
+          .catch((err: any) => {
+            this.logger.warn('Clipboard API failed, falling back:', err);
+            this._fallbackCopy(text);
+          });
+      } else {
+        this._fallbackCopy(text);
+      }
+    } catch (err) {
+      this.logger.error('Copy to clipboard error:', err);
+      this._fallbackCopy(text);
+    }
+  }
+
+  private _fallbackCopy(text: string): void {
+    try {
+      // Create a textarea element for copying
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          this.logger.log('Content copied using fallback method');
+          this.copyButtonText.set('Copied!');
+          setTimeout(() => this.copyButtonText.set('Copy'), 2000);
+        } else {
+          this.logger.warn('Fallback copy failed');
+          // Silently fail - user can still use Ctrl/Cmd+C manually
+        }
+      } catch (err) {
+        this.logger.error('execCommand copy failed:', err);
+      }
+
+      document.body.removeChild(textarea);
+    } catch (fallbackErr) {
+      this.logger.error('Fallback copy error:', fallbackErr);
+    }
   }
 }

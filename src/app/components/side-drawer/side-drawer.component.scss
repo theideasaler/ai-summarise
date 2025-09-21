@@ -1,6 +1,22 @@
+// Mobile Backdrop
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1099;
+  
+  @media (max-width: 768px) {
+    display: block;
+  }
+}
+
 .side-drawer {
   width: 280px;
-  height: 100vh;
+  height: 100%;
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
   display: flex;
@@ -8,12 +24,15 @@
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 1000;
+  z-index: 1100;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   transition: width 0.3s ease;
 
   &.collapsed {
     width: 80px;
+    app-user-avatar {
+      display: none;
+    }
   }
 }
 
@@ -289,13 +308,42 @@
   background: #9ca3af;
 }
 
+// Tokens item specific styles
+.nav-item.tokens-item {
+  .nav-icon {
+    color: #fbbf24; // Golden color for token icon
+  }
+
+  .token-count {
+    color: #fbbf24;
+    font-weight: 600;
+  }
+
+  &:hover {
+    .nav-icon {
+      color: #f59e0b;
+    }
+
+    .token-count {
+      color: #f59e0b;
+    }
+  }
+
+  &.active {
+    .nav-icon {
+      color: #f59e0b;
+    }
+
+    .token-count {
+      color: #f59e0b;
+    }
+  }
+}
+
 // Collapsed state styles
 .side-drawer.collapsed {
   .drawer-header {
     justify-content: center;
-
-    .header-controls {
-    }
   }
 
   .drawer-content {
@@ -349,7 +397,7 @@
   .side-drawer {
     transform: translateX(calc(-100% - 10px));
     transition: transform 0.3s ease;
-    z-index: 1001;
+    z-index: 1100;
 
     &.open {
       transform: translateX(0);
@@ -367,11 +415,78 @@
   }
 
   .side-drawer.collapsed {
-    width: 280px;
+    width: 280px !important; // Always full width on mobile
     transform: translateX(calc(-100% - 10px));
 
     &.open {
       transform: translateX(0);
+    }
+    
+    // On mobile, the collapsed state should still show full content
+    app-user-avatar {
+      display: block !important;
+    }
+    
+    .drawer-header {
+      justify-content: space-between !important;
+      
+      .logo-section {
+        .logo-text {
+          display: block !important;
+          font-size: 1.8rem !important;
+        }
+      }
+    }
+    
+    .drawer-content {
+      .nav-section {
+        padding: 0 1rem !important;
+        
+        .section-title {
+          opacity: 1 !important;
+          height: auto !important;
+          margin: 0 0 1rem 0.5rem !important;
+          overflow: visible !important;
+        }
+        
+        .nav-list {
+          .nav-item {
+            .nav-item-content {
+              justify-content: flex-start !important;
+              padding: 1rem !important;
+              gap: 1rem !important;
+              
+              .nav-icon {
+                margin: 0 !important;
+              }
+              
+              .nav-text {
+                display: block !important;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    .drawer-footer {
+      .user-section {
+        justify-content: space-between !important;
+        
+        .user-info {
+          justify-content: flex-start !important;
+          
+          .user-details {
+            display: block !important;
+          }
+        }
+        
+        .sign-out-btn {
+          position: static !important;
+          transform: none !important;
+          margin-top: 0 !important;
+        }
+      }
     }
   }
 }

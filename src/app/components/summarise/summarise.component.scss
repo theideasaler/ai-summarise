@@ -1,20 +1,16 @@
 .summarise-layout {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-primary);
+  position: relative;
+  overflow: hidden;
 }
 
 .content-area {
   flex: 1;
-  margin-left: 280px; // Side drawer width (expanded)
-  height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
   background-color: var(--bg-primary);
-  transition: margin-left 0.3s ease;
-
-  &.drawer-collapsed {
-    margin-left: 80px; // Side drawer width (collapsed)
-  }
 }
 
 .summarise-container {
@@ -36,38 +32,10 @@
   max-width: 600px;
 }
 
-// Mobile overlay for drawer
-.mobile-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  display: none;
-
-  &.active {
-    opacity: 1;
-    visibility: visible;
-  }
-}
-
 // Responsive design
 @media (max-width: 768px) {
   .content-area {
-    margin-left: 0 !important; // Override both expanded and collapsed states
-    
-    &.drawer-collapsed {
-      margin-left: 0 !important; // Ensure collapsed state also has no margin on mobile
-    }
-  }
-
-  .mobile-overlay {
-    display: block;
+    margin-top: 5px;
   }
 }
 

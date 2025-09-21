@@ -4,10 +4,14 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:host": "ng serve --host 192.168.4.25",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:ai-summarise": "node dist/ai-summarise/server/server.mjs"
+    "serve:ssr:ai-summarise": "node dist/ai-summarise/server/server.mjs",
+    "claude": "npx ccusage blocks --live",
+    "mcp:browser": "npx @browsermcp/mcp@latest",
+    "mcp:playwright": "npx @playwright/mcp@latest"
   },
   "private": true,
   "dependencies": {
@@ -24,8 +28,16 @@
     "@angular/router": "^19.2.0",
     "@angular/ssr": "^19.2.15",
     "@angular/youtube-player": "^19.2.19",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@stripe/stripe-js": "^7.9.0",
     "express": "^4.18.2",
     "firebase": "^12.1.0",
+    "get-video-duration": "^4.1.0",
+    "html2pdf.js": "^0.12.0",
+    "jspdf": "^3.0.2",
+    "music-metadata": "^11.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

@@ -4,6 +4,12 @@ import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import {
+  CONTENT_TYPE_ORDER,
+  ContentTypeId,
+  ContentTypeUIMetadata,
+  getContentTypeMetadata,
+} from '../../../models/content-type-ui.config';
 
 @Component({
   selector: 'app-summarise-options',
@@ -13,43 +19,12 @@ import { MatCardModule } from '@angular/material/card';
   styleUrl: './summarise-options.component.scss',
 })
 export class SummariseOptionsComponent {
-  options = [
-    {
-      title: 'YouTube Video',
-      description: 'Summarise YouTube videos',
-      icon: 'play_circle_filled',
-      route: '/summarise/youtube',
-      color: '#FF0000',
-    },
-    {
-      title: 'Text Content',
-      description: 'Analyze text documents',
-      icon: 'description',
-      route: '/summarise/text',
-      color: '#4285F4',
-    },
-    {
-      title: 'Image Analysis',
-      description: 'Analyze and describe images',
-      icon: 'image',
-      route: '/summarise/image',
-      color: '#9C27B0',
-    },
-    {
-      title: 'Audio Content',
-      description: 'Transcribe and summarise audio',
-      icon: 'audiotrack',
-      route: '/summarise/audio',
-      color: '#FF9800',
-    },
-    {
-      title: 'Web Page',
-      description: 'Summarise web page content',
-      icon: 'language',
-      route: '/summarise/webpage',
-      color: '#4CAF50',
-    },
-  ];
+  readonly options: Array<
+    ContentTypeUIMetadata & { type: ContentTypeId }
+  > = CONTENT_TYPE_ORDER.map((type) => ({
+    type,
+    ...getContentTypeMetadata(type),
+  }));
 
   constructor(private router: Router) {}
 

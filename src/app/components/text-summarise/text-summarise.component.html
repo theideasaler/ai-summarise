@@ -1,0 +1,173 @@
+<div class="text-summarise-container no-form-field-bottom-space">
+  <!-- Summary Result (match YouTube: show during loading) -->
+  <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
+    [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"
+    (clear)="onClearSummary()" (copy)="copySummary()">
+  </app-summary-result>
+
+  <!-- Rewrite Action Bar -->
+  <div class="rewrite-action-bar-container" *ngIf="summaryResult() && !isLoadingSummary()">
+    <app-rewrite-fine-tuning [isExpanded]="isRewriteFineTuningExpanded()"
+      [tokenCount]="summaryResult()?.tokensUsed || 0" (expandedChange)="onRewriteFineTuningExpandedChange($event)"
+      (rewriteSubmit)="onRewriteFineTuningSubmit($event)" (customPromptSaved)="onCustomPromptSaved($event)">
+    </app-rewrite-fine-tuning>
+  </div>
+
+  <!-- Rewritten Summary (match YouTube: show during loading; show dots) -->
+  <div class="rewritten-summary-container" *ngIf="rewrittenSummary() || isRewriteLoading()">
+    <app-rewritten-summary [rewrittenData]="getRewrittenSummaryData()" [isRewriting]="isRegeneratingRewrite()"
+      [isLoading]="isRewriteLoading() && !rewrittenSummary()" (rewriteAgain)="onRewriteAgain()"
+      (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+    </app-rewritten-summary>
+  </div>
+
+  <!-- Marketing Hero (when no summary) -->
+  <div class="marketing-hero" *ngIf="!summaryResult() && !isLoadingSummary()">
+    <div class="hero-content">
+      <h1 class="hero-title">Transform Text into Insights</h1>
+      <p class="hero-subtitle">
+        Upload documents or paste text to get AI-powered summaries that capture the essence of your content
+      </p>
+      <div class="hero-features">
+        <div class="feature-item">
+          <mat-icon>description</mat-icon>
+          <span>PDF, Word & Text Files</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>psychology</mat-icon>
+          <span>Smart Analysis</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>speed</mat-icon>
+          <span>Instant Results</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-space" [style.height.px]="bottomSpaceHeight()"></div>
+  <!-- Fixed Bottom Section -->
+  <div class="fixed-bottom-section">
+    <!-- Input Card -->
+    <div class="input-card" #inputCard>
+      <!-- Fine-tuning Card (appears above input when toggled) -->
+      <div class="settings-card" *ngIf="isFineTuningExpanded() && (textControl.valid || selectedFile())" [@slideInOut]>
+        <div class="card-header">
+          <div class="header-left">
+            <mat-icon class="card-icon">tune</mat-icon>
+            <h3 class="card-title">Fine Tuning</h3>
+          </div>
+        </div>
+        <div class="fine-tuning-content">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Custom Summarisation Prompt</mat-label>
+            <textarea matInput [value]="customPrompt()" (input)="onFineTuningInput($event)"
+              placeholder="Enter custom instructions for summarisation..." rows="3">
+                              </textarea>
+          </mat-form-field>
+          <!-- No action buttons for text fine-tuning (matches YouTube UX) -->
+        </div>
+      </div>
+
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-title">
+            <mat-icon class="card-icon">edit_note</mat-icon>
+            <h3 class="card-title">Text Input</h3>
+          </div>
+
+          <!-- Loading dots indicator (like YouTube) when counting tokens -->
+          <ng-container *ngIf="isLoadingTokens()">
+            <div class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </ng-container>
+
+          <!-- Token Badge -->
+          <app-token-badge
+            *ngIf="!isLoadingTokens() && tokenCount()"
+            [tokensCount]="tokenCount()"
+            [isEstimation]="true"
+            tooltip="This is an estimated token count for processing your text. Actual token usage may vary depending on content complexity and processing requirements. This estimate is provided for reference purposes only.">
+          </app-token-badge>
+        </div>
+        <div class="header-right">
+          <!-- Fine-tuning Toggle -->
+          <div class="tune-button-container">
+            <button mat-icon-button class="fine-tuning-button" [class.active]="isFineTuningExpanded()"
+              (click)="toggleFineTuning()" matTooltip="Fine-tune summarisation"
+              [disabled]="!textControl.valid && !selectedFile()">
+              <mat-icon>tune</mat-icon>
+            </button>
+            <div class="red-dot-badge" *ngIf="hasCustomFineTuningConfig()" (click)="toggleFineTuning()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-content">
+        <!-- Text Input Mode -->
+        <div class="text-input-container" *ngIf="displayMode() === 'text'">
+          <mat-form-field appearance="outline" class="full-width" [class.dragging]="isDragging()"
+            (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+            <mat-label>Enter or paste your text, or drop files here</mat-label>
+            <textarea matInput [formControl]="textControl"
+              placeholder="Type, paste text, or drop PDF/Word/text files here..." rows="6" maxlength="50000">
+                                </textarea>
+            <mat-hint align="end">{{ textControl.value?.length || 0 }}/50000</mat-hint>
+            <mat-error *ngIf="textControl.hasError('required')">
+              Text is required
+            </mat-error>
+            <mat-error *ngIf="textControl.hasError('minlength')">
+              Text must be at least 10 characters
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- File Mode -->
+        <div class="file-mode-container" *ngIf="displayMode() === 'file'">
+          <div class="selected-file-info">
+            <mat-icon class="file-icon">description</mat-icon>
+            <div class="file-details">
+              <p class="file-name">{{ selectedFile()?.name }}</p>
+              <p class="file-meta">
+                <span>{{ selectedFile()?.size }}</span>
+              </p>
+            </div>
+            <button mat-icon-button color="warn" (click)="onFileRemoved()">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <!-- Processing indicator -->
+          <div class="processing-file" *ngIf="isProcessingFile()">
+            <mat-spinner diameter="20"></mat-spinner>
+            <span>Extracting text from file...</span>
+          </div>
+
+          <!-- File Error -->
+          <div class="file-error" *ngIf="fileError()">
+            <mat-icon>error</mat-icon>
+            <span>{{ fileError() }}</span>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div *ngIf="submitError()" class="error-message">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ submitError() }}</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" class="submit-button" [disabled]="!canSubmit()"
+            (click)="onSubmit()">
+            <mat-icon>auto_awesome</mat-icon>
+            {{ isSubmitting() ? 'Summarising...' : 'Summarise' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

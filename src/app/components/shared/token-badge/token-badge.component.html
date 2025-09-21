@@ -1,0 +1,13 @@
+@if (shouldDisplay) {
+<div class="token-badge" [attr.aria-label]="ariaLabel" role="status"
+  (click)="onBadgeClick()"
+  #tooltip="matTooltip"
+  [matTooltip]="tooltipText"
+  matTooltipPosition="above"
+>
+  <span class="token-count">{{ tokenText }}</span>
+  @if (isEstimation) {
+  <mat-icon class="info-icon"> info </mat-icon>
+  }
+  </div>
+}

@@ -5,6 +5,7 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
+import { LoggerService } from './logger.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,8 +16,8 @@ export class FirebaseService {
   private firestore: Firestore = getFirestore(this.app);
   private storage: FirebaseStorage = getStorage(this.app);
 
-  constructor() {
-    console.log('Firebase initialized successfully');
+  constructor(private logger: LoggerService) {
+    this.logger.log('Firebase initialized successfully');
   }
 
   // Authentication methods
@@ -25,7 +26,7 @@ export class FirebaseService {
       const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
       return userCredential.user;
     } catch (error) {
-      console.error('Sign in error:', error);
+      this.logger.error('Sign in error:', error);
       throw error;
     }
   }
@@ -35,7 +36,7 @@ export class FirebaseService {
       const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
       return userCredential.user;
     } catch (error) {
-      console.error('Sign up error:', error);
+      this.logger.error('Sign up error:', error);
       throw error;
     }
   }
@@ -44,7 +45,7 @@ export class FirebaseService {
     try {
       await signOut(this.auth);
     } catch (error) {
-      console.error('Sign out error:', error);
+      this.logger.error('Sign out error:', error);
       throw error;
     }
   }

@@ -1,25 +1,24 @@
 import {
   Component,
-  Output,
-  EventEmitter,
-  signal,
   computed,
-  OnInit,
-  OnDestroy,
+  EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
+  signal,
   SimpleChanges,
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { MatSliderModule } from '@angular/material/slider';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
-import { debounceTime, Subject, takeUntil } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { VideoFineTuningConfig } from '../../models/types';
 
 @Component({
@@ -48,8 +47,7 @@ export class YoutubeFineTuningComponent
 
   @Output() configChange = new EventEmitter<VideoFineTuningConfig>();
 
-  private destroy$ = new Subject<void>();
-  private promptSubject = new Subject<string>();
+  // Remove debouncing subjects - let parent handle all debouncing
 
   // Internal signals
   startSeconds = signal<number>(0);
@@ -96,18 +94,11 @@ export class YoutubeFineTuningComponent
   }
 
   ngOnInit() {
-    // Set up debounced prompt changes
-    this.promptSubject
-      .pipe(debounceTime(500), takeUntil(this.destroy$))
-      .subscribe((prompt) => {
-        this.customPrompt.set(prompt);
-        this.emitConfigChange();
-      });
+    // No debouncing needed - parent handles all debouncing
   }
 
   ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
+    // No cleanup needed
   }
 
   onRangeChange(value: number) {
@@ -128,7 +119,8 @@ export class YoutubeFineTuningComponent
 
   onPromptChange(event: Event) {
     const target = event.target as HTMLTextAreaElement;
-    this.promptSubject.next(target.value);
+    this.customPrompt.set(target.value);
+    this.emitConfigChange();
   }
 
   private formatTime(seconds: number): string {

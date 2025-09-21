@@ -1,3 +1,9 @@
+<!-- Mobile Backdrop -->
+<div class="mobile-backdrop" 
+     *ngIf="isMobileDrawerOpen$ | async" 
+     (click)="closeMobileDrawer()">
+</div>
+
 <div class="side-drawer" [class.open]="shouldShowOpenClass$ | async" [class.collapsed]="shouldShowCollapsedClass$ | async">
   <!-- Logo Section -->
   <div class="drawer-header">
@@ -18,16 +24,39 @@
   <!-- Navigation Section -->
   <div class="drawer-content">
     <div class="nav-section">
-      <h3 class="section-title">SUMMARIZE CONTENT</h3>
       <nav class="nav-list">
+        <!-- Main Navigation Items -->
         <a *ngFor="let item of navigationItems" [routerLink]="item.route" class="nav-item"
-          [class.active]="isActive(item.route)" (click)="navigateTo(item.route)"
+          [class.active]="isActive(item.route)"
           [title]="(isDesktopDrawerCollapsed$ | async) ? item.label + ' - ' + item.description : ''">
           <div class="nav-item-content">
             <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
             <div class="nav-text" *ngIf="shouldShowText$ | async">
               <span class="nav-label">{{ item.label }}</span>
               <span class="nav-description">{{ item.description }}</span>
+            </div>
+          </div>
+        </a>
+        
+        <!-- Tokens Item -->
+        <a routerLink="/plans" class="nav-item tokens-item"
+          [class.active]="isActive('/plans')"
+          [title]="(isDesktopDrawerCollapsed$ | async) ? 'Tokens - View subscription plans and token usage' : ''">
+          <div class="nav-item-content">
+            <mat-icon class="nav-icon">toll</mat-icon>
+            <div class="nav-text" *ngIf="shouldShowText$ | async">
+              <span class="nav-label">Tokens</span>
+              <span class="nav-description token-count" *ngIf="(remainingTokens$ | async) !== null && (remainingTokens$ | async) !== undefined">
+                {{ (remainingTokens$ | async) | number }} remaining
+              </span>
+              <span class="nav-description" *ngIf="(remainingTokens$ | async) === null || (remainingTokens$ | async) === undefined">
+                <ng-container *ngIf="currentUser$ | async; else notAuthenticated">
+                  Loading...
+                </ng-container>
+                <ng-template #notAuthenticated>
+                  Sign in to view
+                </ng-template>
+              </span>
             </div>
           </div>
         </a>

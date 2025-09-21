@@ -1,25 +1,13 @@
 .app-container {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 
-.app-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
 
-app-header {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  z-index: 1000;
-}
 
 .app-loading {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
