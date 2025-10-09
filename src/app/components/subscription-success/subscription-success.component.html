@@ -3,8 +3,19 @@
   <mat-card *ngIf="isLoading" class="status-card">
     <mat-card-content class="loading-content">
       <mat-spinner diameter="48"></mat-spinner>
-      <h2>Processing your subscription...</h2>
+      <h2>{{ pollingMessage }}</h2>
       <p>Please wait while we confirm your payment and activate your subscription.</p>
+
+      <!-- Polling Progress Indicator -->
+      <div *ngIf="isPolling" class="polling-progress">
+        <mat-chip-set aria-label="Polling progress">
+          <mat-chip color="primary" highlighted>
+            <mat-icon>sync</mat-icon>
+            Checking status: {{ currentRetry }}/{{ maxRetries }}
+          </mat-chip>
+        </mat-chip-set>
+        <p class="polling-hint">This may take up to 20 seconds...</p>
+      </div>
     </mat-card-content>
   </mat-card>
 
@@ -16,8 +27,19 @@
       </div>
       <h1>Subscription Successful!</h1>
       <p class="success-message">
-        Your subscription has been activated successfully. You now have access to all premium features.
+        Your subscription has been activated successfully. You now have access to all Pro features.
       </p>
+
+      <!-- Show upgraded tier if detected -->
+      <div *ngIf="detectedSubscriptionTier" class="tier-info">
+        <mat-chip-set aria-label="Subscription tier">
+          <mat-chip color="accent" highlighted>
+            <mat-icon>star</mat-icon>
+            {{ detectedSubscriptionTier | uppercase }} Plan Activated
+          </mat-chip>
+        </mat-chip-set>
+      </div>
+
       <div class="action-buttons">
         <button mat-raised-button color="primary" (click)="goToDashboard()">
           <mat-icon>dashboard</mat-icon>
@@ -35,21 +57,32 @@
   <mat-card *ngIf="!isLoading && !isSuccess" class="status-card error">
     <mat-card-content class="error-content">
       <div class="icon-container">
-        <mat-icon class="error-icon">error</mat-icon>
+        <mat-icon class="error-icon">{{ errorMessage.includes('taking longer') ? 'schedule' : 'error' }}</mat-icon>
       </div>
-      <h1>Something went wrong</h1>
+      <h1>{{ errorMessage.includes('taking longer') ? 'Activation Pending' : 'Something went wrong' }}</h1>
       <p class="error-message">{{ errorMessage }}</p>
+
+      <!-- Show retry info if polling timeout -->
+      <div *ngIf="currentRetry >= maxRetries" class="timeout-info">
+        <mat-chip-set aria-label="Timeout information">
+          <mat-chip color="warn">
+            <mat-icon>info</mat-icon>
+            Maximum wait time reached ({{ maxRetries * 2 }} seconds)
+          </mat-chip>
+        </mat-chip-set>
+      </div>
+
       <p class="help-text">
         Your payment may have been processed successfully. Please check your account or contact support if you need assistance.
       </p>
       <div class="action-buttons">
-        <button mat-raised-button color="primary" (click)="goToPlans()">
-          <mat-icon>credit_card</mat-icon>
-          Back to Plans
-        </button>
-        <button mat-button (click)="goToAccount()">
+        <button mat-raised-button color="primary" (click)="goToAccount()">
           <mat-icon>account_circle</mat-icon>
           Check Account
+        </button>
+        <button mat-button (click)="goToPlans()">
+          <mat-icon>credit_card</mat-icon>
+          Back to Plans
         </button>
       </div>
     </mat-card-content>

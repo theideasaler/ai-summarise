@@ -210,7 +210,13 @@ export class AudioSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     this.apiService.summariseAudio(request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => this._handleSummarySuccess(response),
+        next: (response) => {
+          this._handleSummarySuccess(response);
+          // Refresh token info after submission
+          this.tokenService.fetchTokenInfo().then(() => {
+            this.logger.log('Tokens refreshed after audio submission');
+          });
+        },
         error: (error) => this._handleApiError(error, 'Audio transcription and analysis'),
       });
   }

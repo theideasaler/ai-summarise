@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from './services/auth.service';
+import { SubscriptionBootstrapService } from './services/subscription-bootstrap.service';
 
 @Component({
   selector: 'app-root',
@@ -14,7 +15,10 @@ export class AppComponent {
   isLoading$: Observable<boolean>;
   showHeader?: boolean;
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private subscriptionBootstrap: SubscriptionBootstrapService
+  ) {
     this.isLoading$ = this.authService.isLoading$;
   }
 }

@@ -149,7 +149,11 @@ export class AccountComponent implements OnInit, OnDestroy {
   }
 
   goToPlans(): void {
-    this.router.navigate(['/plans']);
+    this.router.navigate(['/account/upgrade']);
+  }
+
+  goToUpgrade(): void {
+    this.router.navigate(['/account/upgrade']);
   }
 
   formatDate(dateString: string | undefined): string {
@@ -168,8 +172,6 @@ export class AccountComponent implements OnInit, OnDestroy {
     switch (tier) {
       case 'pro':
         return 'primary';
-      case 'premium':
-        return 'accent';
       default:
         return '';
     }

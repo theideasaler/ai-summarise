@@ -43,24 +43,42 @@
       </mat-card-header>
       <mat-card-content>
         <ng-container *ngIf="subscriptionStatus$ | async as status; else noSubscription">
+          <!-- Current Plan with conditional Upgrade chip -->
           <div class="info-row">
             <span class="info-label">Current Plan:</span>
-            <mat-chip [color]="getTierColor(status.tier)" selected>
-              {{ status.tier | titlecase }}
-            </mat-chip>
+            <div class="plan-chips">
+              <mat-chip [color]="getTierColor(status.tier)" selected>
+                {{ status.tier | titlecase }}
+              </mat-chip>
+              <mat-chip
+                *ngIf="status.tier === 'free'"
+                color="accent"
+                selected
+                (click)="goToUpgrade()"
+                class="upgrade-chip">
+                <mat-icon>upgrade</mat-icon>
+                Upgrade
+              </mat-chip>
+            </div>
           </div>
+
+          <!-- Status -->
           <div class="info-row">
             <span class="info-label">Status:</span>
             <mat-chip [color]="getStatusColor(status.status)" selected>
               {{ status.status | titlecase }}
             </mat-chip>
           </div>
-          <div class="info-row" *ngIf="status.currentPeriodEnd">
+
+          <!-- Next Billing Date - Only show for Pro plan -->
+          <div class="info-row" *ngIf="status.tier !== 'free' && status.currentPeriodEnd">
             <span class="info-label">
               {{ status.cancelAtPeriodEnd ? 'Subscription Ends:' : 'Next Billing Date:' }}
             </span>
             <span class="info-value">{{ formatDate(status.currentPeriodEnd) }}</span>
           </div>
+
+          <!-- Cancellation Warning -->
           <div class="info-row" *ngIf="status.cancelAtPeriodEnd">
             <span class="info-label warning-text">
               <mat-icon>warning</mat-icon>
@@ -68,16 +86,15 @@
             </span>
           </div>
 
-          <mat-divider class="section-divider"></mat-divider>
+          <mat-divider class="section-divider" *ngIf="status.tier !== 'free'"></mat-divider>
 
-          <!-- Subscription Actions -->
-          <div class="action-buttons">
+          <!-- Subscription Actions - Only show for Pro plan -->
+          <div class="action-buttons" *ngIf="status.tier !== 'free'">
             <button
               mat-raised-button
               color="primary"
               (click)="openBillingPortal()"
-              [disabled]="isLoadingPortal"
-              *ngIf="status.tier !== 'free'">
+              [disabled]="isLoadingPortal">
               <mat-spinner diameter="20" *ngIf="isLoadingPortal"></mat-spinner>
               <span *ngIf="!isLoadingPortal">
                 <mat-icon>manage_accounts</mat-icon>
@@ -86,19 +103,11 @@
             </button>
 
             <button
-              mat-raised-button
-              (click)="goToPlans()"
-              *ngIf="status.tier === 'free'">
-              <mat-icon>upgrade</mat-icon>
-              Upgrade Plan
-            </button>
-
-            <button
               mat-button
               color="warn"
               (click)="cancelSubscription()"
               [disabled]="isLoadingCancel"
-              *ngIf="status.tier !== 'free' && status.status === 'active' && !status.cancelAtPeriodEnd">
+              *ngIf="status.status === 'active' && !status.cancelAtPeriodEnd">
               <mat-spinner diameter="20" *ngIf="isLoadingCancel"></mat-spinner>
               <span *ngIf="!isLoadingCancel">
                 <mat-icon>cancel</mat-icon>
@@ -124,7 +133,7 @@
         <ng-template #noSubscription>
           <div class="no-subscription">
             <p>You are currently on the Free plan.</p>
-            <button mat-raised-button color="primary" (click)="goToPlans()">
+            <button mat-raised-button color="primary" (click)="goToUpgrade()">
               <mat-icon>upgrade</mat-icon>
               View Available Plans
             </button>
@@ -159,7 +168,7 @@
           </div>
         </div>
         <p class="usage-note">
-          Token usage resets on {{ formatDate(tokenInfo.nextResetDate) }}. Upgrade your plan for more tokens.
+          Token usage resets on {{ formatDate(tokenInfo.nextResetDate) }}.
         </p>
       </mat-card-content>
     </mat-card>

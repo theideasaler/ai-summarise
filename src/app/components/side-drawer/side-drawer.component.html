@@ -38,16 +38,16 @@
           </div>
         </a>
         
-        <!-- Tokens Item -->
-        <a routerLink="/plans" class="nav-item tokens-item"
-          [class.active]="isActive('/plans')"
-          [title]="(isDesktopDrawerCollapsed$ | async) ? 'Tokens - View subscription plans and token usage' : ''">
+        <!-- Account Item -->
+        <a routerLink="/account" class="nav-item account-item"
+          [class.active]="isActive('/account')"
+          [title]="(isDesktopDrawerCollapsed$ | async) ? 'Account - Manage subscription and settings' : ''">
           <div class="nav-item-content">
-            <mat-icon class="nav-icon">toll</mat-icon>
+            <mat-icon class="nav-icon">account_circle</mat-icon>
             <div class="nav-text" *ngIf="shouldShowText$ | async">
-              <span class="nav-label">Tokens</span>
+              <span class="nav-label">Account</span>
               <span class="nav-description token-count" *ngIf="(remainingTokens$ | async) !== null && (remainingTokens$ | async) !== undefined">
-                {{ (remainingTokens$ | async) | number }} remaining
+                {{ (remainingTokens$ | async) | number }} tokens left
               </span>
               <span class="nav-description" *ngIf="(remainingTokens$ | async) === null || (remainingTokens$ | async) === undefined">
                 <ng-container *ngIf="currentUser$ | async; else notAuthenticated">
@@ -71,7 +71,19 @@
         <app-user-avatar [user]="user" size="medium"></app-user-avatar>
         <div class="user-details" *ngIf="shouldShowText$ | async">
           <span class="user-name">{{ user.displayName || user.email }}</span>
-          <span class="user-plan">Free Plan</span>
+          <span class="user-plan" *ngIf="subscriptionStatus$ | async as status; else defaultPlan">
+            {{ getPlanDisplayName(status.tier) }}
+          </span>
+          <ng-template #defaultPlan>
+            <span class="user-plan">
+              <ng-container *ngIf="userProfile$ | async as profile; else checkingPlan">
+                {{ getPlanDisplayName(profile.subscriptionTier) }}
+              </ng-container>
+              <ng-template #checkingPlan>
+                Checking plan...
+              </ng-template>
+            </span>
+          </ng-template>
         </div>
       </div>
       <button class="sign-out-btn" (click)="signOut()" [title]="(isDesktopDrawerCollapsed$ | async) ? 'Sign Out' : 'Sign Out'">

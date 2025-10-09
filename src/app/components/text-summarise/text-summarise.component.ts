@@ -370,7 +370,13 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
         .summariseTextFile(file.file, this.customPrompt() || undefined)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: (response) => this._handleSummarySuccess(response),
+          next: (response) => {
+            this._handleSummarySuccess(response);
+            // Refresh token info after submission
+            this.tokenService.fetchTokenInfo().then(() => {
+              this.logger.log('Tokens refreshed after text file submission');
+            });
+          },
           error: (error) => this._handleApiError(error, 'Text file summarisation'),
         });
     } else {
@@ -384,7 +390,13 @@ export class TextSummariseComponent implements OnInit, OnDestroy, AfterViewInit 
         .summarise(request)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: (response) => this._handleSummarySuccess(response),
+          next: (response) => {
+            this._handleSummarySuccess(response);
+            // Refresh token info after submission
+            this.tokenService.fetchTokenInfo().then(() => {
+              this.logger.log('Tokens refreshed after text submission');
+            });
+          },
           error: (error) => this._handleApiError(error, 'Text summarisation'),
         });
     }

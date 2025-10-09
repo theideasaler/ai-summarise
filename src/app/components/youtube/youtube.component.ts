@@ -702,7 +702,13 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
       .summariseYouTube(request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => this._handleSummarySuccess(response),
+        next: (response) => {
+          this._handleSummarySuccess(response);
+          // Refresh token info after submission
+          this.tokenService.fetchTokenInfo().then(() => {
+            this.logger.log('Tokens refreshed after YouTube submission');
+          });
+        },
         error: (error) => this._handleApiError(error, 'YouTube summarisation'),
       });
   }

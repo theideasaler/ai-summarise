@@ -304,7 +304,13 @@ export class VideoSummariseComponent implements OnInit, OnDestroy, AfterViewInit
     this.apiService.summariseVideo(request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => this._handleSummarySuccess(response),
+        next: (response) => {
+          this._handleSummarySuccess(response);
+          // Refresh token info after submission
+          this.tokenService.fetchTokenInfo().then(() => {
+            this.logger.log('Tokens refreshed after video submission');
+          });
+        },
         error: (error) => this._handleApiError(error, 'Video analysis'),
       });
   }

@@ -97,6 +97,91 @@
   }
 }
 
+// Polling progress styles
+.polling-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+
+  mat-chip-set {
+    display: flex;
+    justify-content: center;
+
+    mat-chip {
+      font-size: 14px;
+
+      mat-icon {
+        margin-right: 4px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        animation: rotate 2s linear infinite;
+      }
+    }
+  }
+
+  .polling-hint {
+    font-size: 13px !important;
+    color: rgba(0, 0, 0, 0.5);
+    font-style: italic;
+  }
+}
+
+// Tier info styles
+.tier-info {
+  margin: 10px 0;
+
+  mat-chip-set {
+    display: flex;
+    justify-content: center;
+
+    mat-chip {
+      font-size: 16px;
+      font-weight: 500;
+
+      mat-icon {
+        margin-right: 4px;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+}
+
+// Timeout info styles
+.timeout-info {
+  margin: 10px 0;
+
+  mat-chip-set {
+    display: flex;
+    justify-content: center;
+
+    mat-chip {
+      font-size: 13px;
+
+      mat-icon {
+        margin-right: 4px;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+}
+
+// Animation for rotating sync icon
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 600px) {
   .status-card {
     padding: 20px;
