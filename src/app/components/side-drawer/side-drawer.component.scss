@@ -308,20 +308,20 @@
   background: #9ca3af;
 }
 
-// Tokens item specific styles
-.nav-item.tokens-item {
+// Account item specific styles
+.nav-item.account-item {
   .nav-icon {
-    color: #fbbf24; // Golden color for token icon
+    color: #3f51b5; // Primary blue color for account icon
   }
 
   .token-count {
-    color: #fbbf24;
+    color: #fbbf24; // Keep golden color for token count
     font-weight: 600;
   }
 
   &:hover {
     .nav-icon {
-      color: #f59e0b;
+      color: #303f9f;
     }
 
     .token-count {
@@ -331,7 +331,7 @@
 
   &.active {
     .nav-icon {
-      color: #f59e0b;
+      color: #303f9f;
     }
 
     .token-count {

@@ -9,7 +9,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:ai-summarise": "node dist/ai-summarise/server/server.mjs",
-    "claude": "npx ccusage blocks --live",
+    "claude:usage": "npx ccusage blocks --live",
     "mcp:browser": "npx @browsermcp/mcp@latest",
     "mcp:playwright": "npx @playwright/mcp@latest"
   },

@@ -78,8 +78,11 @@
     border-radius: 16px;
     border: 1px solid var(--project-border-color);
     padding: 16px;
-    grid-template-columns: minmax(180px, 200px) minmax(220px, 1fr) minmax(180px, 320px);
-    grid-template-areas: 'type search sort';
+    grid-template-columns: minmax(180px, 200px) minmax(220px, 1fr) minmax(
+        180px,
+        320px
+      );
+    grid-template-areas: "type search sort";
 
     .mat-mdc-form-field {
       margin-bottom: 0;
@@ -144,9 +147,11 @@
   }
 
   .empty-state {
-    margin: 32px auto;
-    max-width: 400px;
+    margin: 0 auto;
+    border-radius: 16px;
     text-align: center;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
 
     mat-card-content {
       padding: 48px;
@@ -753,8 +758,8 @@
     .filters-section {
       grid-template-columns: minmax(100px, auto) minmax(160px, 1fr);
       grid-template-areas:
-        'type search'
-        'sort sort';
+        "type search"
+        "sort sort";
 
       .sort-group {
         width: 100%;
@@ -781,9 +786,9 @@
     .filters-section {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        'type'
-        'search'
-        'sort';
+        "type"
+        "search"
+        "sort";
       align-items: stretch;
 
       .sort-group {

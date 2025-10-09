@@ -39,8 +39,9 @@ export const routes: Routes = [
     children: [
       { path: 'projects', component: ProjectsComponent },
       { path: 'projects/:id', component: ProjectDetailComponent },
-      { path: 'plans', component: PlansComponent },
+      { path: 'plans', redirectTo: 'account/upgrade', pathMatch: 'full' }, // Redirect old route
       { path: 'account', component: AccountComponent },
+      { path: 'account/upgrade', component: PlansComponent },
       { path: 'subscription/success', component: SubscriptionSuccessComponent },
       {
         path: 'summarise',

@@ -1,7 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { LoggerService } from './logger.service';
@@ -11,7 +10,7 @@ export interface TokenInfo {
   tokensUsed: number;
   tokensReserved: number;
   remainingTokens: number;
-  subscriptionTier: 'free' | 'pro' | 'premium';
+  subscriptionTier: 'free' | 'pro';
   monthYear: string;
   nextResetDate: string;
 }
@@ -41,7 +40,7 @@ export class TokenService {
 
   // Computed signals for easy access
   remainingTokens = signal<number | null>(null);
-  subscriptionTier = signal<'free' | 'pro' | 'premium'>('free');
+  subscriptionTier = signal<'free' | 'pro'>('free');
 
   constructor(
     private http: HttpClient,
@@ -49,7 +48,7 @@ export class TokenService {
     private logger: LoggerService
   ) {
     // Subscribe to token info changes and update signals
-    this.tokenInfo$.subscribe(tokenInfo => {
+    this.tokenInfo$.subscribe((tokenInfo) => {
       if (tokenInfo) {
         this.remainingTokens.set(tokenInfo.remainingTokens);
         this.subscriptionTier.set(tokenInfo.subscriptionTier);
@@ -73,13 +72,15 @@ export class TokenService {
 
     // If called within debounce time, return cached data
     if (now - this._lastFetchTime < DEBOUNCE_TIME) {
-      this.logger.log('TokenService: Fetch called too soon, returning cached data');
+      this.logger.log(
+        'TokenService: Fetch called too soon, returning cached data'
+      );
       return this._tokenInfo.value;
     }
 
     // Perform actual fetch
     this._currentFetchPromise = this._performTokenFetch();
-    
+
     try {
       const result = await this._currentFetchPromise;
       this._lastFetchTime = now;
@@ -103,14 +104,16 @@ export class TokenService {
       }
 
       const headers = {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
       };
 
-      const response = await this.http.get<{success: boolean, data: TokenInfo}>(
-        `${this.baseUrl}/api/tokens/remaining`,
-        { headers }
-      ).toPromise();
+      const response = await firstValueFrom(
+        this.http.get<{ success: boolean; data: TokenInfo }>(
+          `${this.baseUrl}/api/tokens/remaining`,
+          { headers }
+        )
+      );
 
       if (response && response.success && response.data) {
         this._tokenInfo.next(response.data);
@@ -131,21 +134,40 @@ export class TokenService {
   /**
    * Update token count after consumption (called after successful API responses)
    */
-  updateTokensAfterConsumption(tokensUsed: number, remainingTokens?: number): void {
+  updateTokensAfterConsumption(
+    tokensUsed: number,
+    remainingTokens?: number
+  ): void {
     const currentInfo = this._tokenInfo.value;
     if (currentInfo) {
       const updatedInfo: TokenInfo = {
         ...currentInfo,
-        remainingTokens: remainingTokens ?? Math.max(0, currentInfo.remainingTokens - tokensUsed),
-        tokensUsed: currentInfo.tokensUsed + tokensUsed
+        remainingTokens:
+          remainingTokens ??
+          Math.max(0, currentInfo.remainingTokens - tokensUsed),
+        tokensUsed: currentInfo.tokensUsed + tokensUsed,
       };
-      
+
       this._tokenInfo.next(updatedInfo);
-      this.logger.log(`Tokens updated: -${tokensUsed}, remaining: ${updatedInfo.remainingTokens}`);
+      this.logger.log(
+        `Tokens updated: -${tokensUsed}, remaining: ${updatedInfo.remainingTokens}`
+      );
     } else {
       // If no current info, fetch fresh data
-      this.fetchTokenInfo();
+      void this.fetchTokenInfo();
     }
+  }
+
+  clear(): void {
+    this._tokenInfo.next(null);
+    this.remainingTokens.set(null);
+    this.subscriptionTier.set('free');
+    this._isInitialized = false;
+    this._initializationPromise = null;
+    this._lastFetchTime = 0;
+    this._currentFetchPromise = null;
+    this._error.set(null);
+    this._isLoading.set(false);
   }
 
   /**
@@ -180,7 +202,7 @@ export class TokenService {
 
     // Create and store the initialization promise
     this._initializationPromise = this._performInitialization();
-    
+
     try {
       await this._initializationPromise;
     } finally {
@@ -198,19 +220,5 @@ export class TokenService {
       this._isInitialized = true;
       this.logger.log('TokenService initialized successfully');
     }
-  }
-
-  /**
-   * Clear token data (call this when user logs out)
-   */
-  clear(): void {
-    this._tokenInfo.next(null);
-    this.remainingTokens.set(null);
-    this.subscriptionTier.set('free');
-    this._error.set(null);
-    this._isInitialized = false;
-    this._initializationPromise = null;
-    this._lastFetchTime = 0;
-    this._currentFetchPromise = null;
   }
 }

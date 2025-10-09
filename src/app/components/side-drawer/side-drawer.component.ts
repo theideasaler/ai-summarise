@@ -3,9 +3,11 @@ import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { AuthService, AuthUser } from '../../services/auth.service';
+import { AuthService, AuthUser, UserProfile } from '../../services/auth.service';
 import { DrawerService } from '../../services/drawer.service';
 import { TokenService } from '../../services/token.service';
+import { StripeService } from '../../services/stripe.service';
+import { SubscriptionStatus } from '../../models/subscription.model';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 import { Observable, combineLatest, BehaviorSubject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -47,6 +49,9 @@ export class SideDrawerComponent implements OnInit {
   private isMobileScreen$ = new BehaviorSubject<boolean>(false);
   // Token information
   remainingTokens$: Observable<number | null>;
+  // Subscription information
+  subscriptionStatus$: Observable<SubscriptionStatus | null>;
+  userProfile$: Observable<UserProfile | null>;
 
   // Computed observables for proper class management
   shouldShowOpenClass$: Observable<boolean>;
@@ -77,10 +82,13 @@ export class SideDrawerComponent implements OnInit {
     private router: Router,
     private authService: AuthService,
     private drawerService: DrawerService,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private stripeService: StripeService
   ) {
     this.currentUser$ = this.authService.currentUser$;
     this.remainingTokens$ = toObservable(this.tokenService.remainingTokens);
+    this.subscriptionStatus$ = this.stripeService.subscriptionStatus$;
+    this.userProfile$ = this.authService.userProfile$;
     // New separate state observables
     this.isMobileDrawerOpen$ = this.drawerService.mobileDrawerOpen$;
     this.isDesktopDrawerCollapsed$ = this.drawerService.desktopDrawerCollapsed$;
@@ -190,5 +198,15 @@ export class SideDrawerComponent implements OnInit {
   onSignOut(): void {
     this.authService.signOut();
     this.router.navigate(['/']);
+  }
+
+  getPlanDisplayName(tier: string): string {
+    switch (tier) {
+      case 'pro':
+        return 'Pro Plan';
+      case 'free':
+      default:
+        return 'Free Plan';
+    }
   }
 }

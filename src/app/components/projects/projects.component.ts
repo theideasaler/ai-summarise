@@ -68,6 +68,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private searchSubject$ = new Subject<string>();
   private sseSubscription$ = new Subject<void>();
   private tokenRefreshSubject$ = new Subject<void>();
+  private readonly localTimeZone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   // State signals
   projects = signal<ProjectSummary[]>([]);
@@ -130,6 +132,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     this._setupTokenRefreshDebounce();
     this._loadProjects();
     this._subscribeToSSE();
+
+    // Refresh tokens when landing on projects page
+    this.tokenService.fetchTokenInfo().then(() => {
+      this.logger.log('Tokens refreshed on projects page load');
+    });
   }
 
   ngOnDestroy(): void {
@@ -177,14 +184,18 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     this.tokenRefreshSubject$
       .pipe(throttleTime(5000), takeUntil(this.destroy$)) // Throttle to max once every 5 seconds
       .subscribe(() => {
-        this.tokenService.fetchTokenInfo().then(() => {
-          this.logger.log('Token information refreshed after project completion');
-        }).catch(error => {
-          this.logger.error('Failed to refresh token information:', error);
-        });
+        this.tokenService
+          .fetchTokenInfo()
+          .then(() => {
+            this.logger.log(
+              'Token information refreshed after project completion'
+            );
+          })
+          .catch((error) => {
+            this.logger.error('Failed to refresh token information:', error);
+          });
       });
   }
-
 
   private _loadProjects(append: boolean = false): void {
     if (append) {
@@ -418,13 +429,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       projectId: project.id,
       projectType: project.contentType,
       tokensUsed: project.tokensUsed,
-      createdAt: new Date(project.createdAt)
+      createdAt: this._parseProjectDate(project.createdAt) ?? new Date(),
     });
 
-    const dialogRef = this.dialog.open(
-      DeleteProjectDialogComponent,
-      config
-    );
+    const dialogRef = this.dialog.open(DeleteProjectDialogComponent, config);
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result?.confirmed) {
@@ -474,7 +482,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         complete: () => {
           // Remove from deleting set
           this.deletingProjects.delete(project.id);
-        }
+        },
       });
   }
 
@@ -485,17 +493,20 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
+    const date = this._parseProjectDate(dateString);
+    if (!date) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
+      timeZone: this.localTimeZone,
+    }).format(date);
   }
-
-  
 
   /**
    * Determine whether to show the token badge for a project.
@@ -514,8 +525,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * - > 7 days: show localized short date (day, short month, year)
    */
   formatRelativeTime(dateString: string): string {
-    const targetDate = new Date(dateString);
-    if (Number.isNaN(targetDate.getTime())) {
+    const targetDate = this._parseProjectDate(dateString);
+    if (!targetDate) {
       return '';
     }
 
@@ -529,7 +540,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: this.localTimeZone,
       }).format(targetDate);
     }
 
@@ -539,21 +551,60 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     if (diffMs < oneDayMs) {
       return new Intl.DateTimeFormat(undefined, {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: this.localTimeZone,
       }).format(targetDate);
     }
 
     if (diffMs <= oneWeekMs) {
       return new Intl.DateTimeFormat(undefined, {
-        weekday: 'long'
+        weekday: 'long',
+        timeZone: this.localTimeZone,
       }).format(targetDate);
     }
 
     return new Intl.DateTimeFormat(undefined, {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: this.localTimeZone,
     }).format(targetDate);
+  }
+
+  private _parseProjectDate(
+    value: string | number | Date | null | undefined
+  ): Date | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      const fromNumber = new Date(value);
+      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
+    }
+
+    const raw = typeof value === 'string' ? value.trim() : String(value).trim();
+    if (!raw) {
+      return null;
+    }
+
+    const hasExplicitTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(raw);
+    const normalised = raw.includes('T') ? raw : raw.replace(' ', 'T');
+
+    if (!hasExplicitTimezone) {
+      const utcCandidate = `${normalised}Z`;
+      const parsedUtc = new Date(utcCandidate);
+      if (!Number.isNaN(parsedUtc.getTime())) {
+        return parsedUtc;
+      }
+    }
+
+    const fallback = new Date(normalised);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
   }
 
   retryLoad(): void {
@@ -576,13 +627,17 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       this.logger.log('Connecting to SSE with JWT token');
 
       // Subscribe to connection state
-      this.sseService.getConnectionState()
+      this.sseService
+        .getConnectionState()
         .pipe(takeUntil(this.destroy$))
-        .subscribe(state => {
+        .subscribe((state) => {
           this.connectionState.set(state);
-          this.isSSEConnecting.set(state === ConnectionState.CONNECTING || state === ConnectionState.RECONNECTING);
+          this.isSSEConnecting.set(
+            state === ConnectionState.CONNECTING ||
+              state === ConnectionState.RECONNECTING
+          );
           this.isSSEConnected.set(state === ConnectionState.CONNECTED);
-          
+
           if (state === ConnectionState.FAILED) {
             this.logger.error('SSE connection failed after max retries');
             this._showErrorSnackBar('Connection failed after 3 attempts');
@@ -594,9 +649,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         });
 
       // Subscribe to events
-      this.sseService.getEvents()
+      this.sseService
+        .getEvents()
         .pipe(takeUntil(this.destroy$))
-        .subscribe(event => {
+        .subscribe((event) => {
           this.logger.log('Received SSE event:', event);
           this._handleSSEEvent(event);
         });
@@ -625,7 +681,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Handle completed events  
+    // Handle completed events
     if (event.type === 'completed' && event.data?.requestId) {
       this._handleProjectCompletedEvent(event);
       return;
@@ -653,17 +709,22 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     const projects = this.projects();
     // Access the requestId from event.data instead of event.requestId
     const requestId = event.data?.requestId;
-    
+
     if (!requestId) {
       this.logger.warn('SSE processing event missing requestId:', event);
       return;
     }
 
     // Find project by matching the requestId with summaryRequestId
-    const projectIndex = projects.findIndex((p) => p.summaryRequestId === requestId);
+    const projectIndex = projects.findIndex(
+      (p) => p.summaryRequestId === requestId
+    );
 
     if (projectIndex === -1) {
-      this.logger.log('SSE status event for project not in current list:', requestId);
+      this.logger.log(
+        'SSE status event for project not in current list:',
+        requestId
+      );
       return;
     }
 
@@ -673,14 +734,18 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     // Update to processing status
     project.status = 'processing';
     project.lastEventAt = new Date().toISOString();
-    
+
     // Set reserved tokens from SSE data if available
     if (event.data?.tokensReserved) {
       project.tokensReserved = event.data.tokensReserved;
-      this.logger.log(`Project ${project.name} reserving ${event.data.tokensReserved} tokens`);
+      this.logger.log(
+        `Project ${project.name} reserving ${event.data.tokensReserved} tokens`
+      );
     }
-    
-    this.logger.log(`Project ${project.name} (requestId: ${requestId}) status: processing`);
+
+    this.logger.log(
+      `Project ${project.name} (requestId: ${requestId}) status: processing`
+    );
 
     // Update the project in the array
     updatedProjects[projectIndex] = project;
@@ -697,17 +762,22 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     const projects = this.projects();
     // Access the requestId from event.data instead of event.requestId
     const requestId = event.data?.requestId;
-    
+
     if (!requestId) {
       this.logger.warn('SSE completed event missing requestId:', event);
       return;
     }
 
     // Find project by matching the requestId with summaryRequestId
-    const projectIndex = projects.findIndex((p) => p.summaryRequestId === requestId);
+    const projectIndex = projects.findIndex(
+      (p) => p.summaryRequestId === requestId
+    );
 
     if (projectIndex === -1) {
-      this.logger.log('SSE completed event for project not in current list:', requestId);
+      this.logger.log(
+        'SSE completed event for project not in current list:',
+        requestId
+      );
       return;
     }
 
@@ -717,15 +787,19 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     // Update to completed status
     project.status = 'completed';
     project.lastEventAt = new Date().toISOString();
-    
+
     // Set actual tokens used and remove reserved tokens
     if (event.data?.tokensUsed) {
       project.tokensUsed = event.data.tokensUsed;
       delete project.tokensReserved; // Remove reserved tokens on completion
-      this.logger.log(`Project ${project.name} consumed ${event.data.tokensUsed} tokens`);
+      this.logger.log(
+        `Project ${project.name} consumed ${event.data.tokensUsed} tokens`
+      );
     }
-    
-    this.logger.log(`Project ${project.name} (requestId: ${requestId}) completed`);
+
+    this.logger.log(
+      `Project ${project.name} (requestId: ${requestId}) completed`
+    );
 
     // Update the project in the array
     updatedProjects[projectIndex] = project;
@@ -742,17 +816,22 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     const projects = this.projects();
     // Access the requestId from event.data
     const requestId = event.data?.requestId;
-    
+
     if (!requestId) {
       this.logger.warn('SSE error event missing requestId:', event);
       return;
     }
 
     // Find project by matching the requestId with summaryRequestId
-    const projectIndex = projects.findIndex((p) => p.summaryRequestId === requestId);
+    const projectIndex = projects.findIndex(
+      (p) => p.summaryRequestId === requestId
+    );
 
     if (projectIndex === -1) {
-      this.logger.log('SSE error event for project not in current list:', requestId);
+      this.logger.log(
+        'SSE error event for project not in current list:',
+        requestId
+      );
       return;
     }
 
@@ -762,8 +841,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     // Update to failed status
     project.status = 'failed';
     project.lastEventAt = new Date().toISOString();
-    
-    this.logger.log(`Project ${project.name} (requestId: ${requestId}) failed:`, event.data.message);
+
+    this.logger.log(
+      `Project ${project.name} (requestId: ${requestId}) failed:`,
+      event.data.message
+    );
 
     // Update the project in the array
     updatedProjects[projectIndex] = project;
@@ -771,7 +853,9 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
     // Show error message
     if (event.data.message) {
-      this._showErrorSnackBar(`Project ${project.name} failed: ${event.data.message}`);
+      this._showErrorSnackBar(
+        `Project ${project.name} failed: ${event.data.message}`
+      );
     }
   }
 
@@ -779,8 +863,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * Handle backend error events (server-side errors, not transport errors)
    */
   private _handleBackendErrorEvent(event: any): void {
-    this.logger.warn('Backend error received:', event.data?.message || 'Unknown backend error');
-    
+    this.logger.warn(
+      'Backend error received:',
+      event.data?.message || 'Unknown backend error'
+    );
+
     // Show soft notification - don't trigger reconnection for backend errors
     const message = event.data?.message || 'A backend error occurred';
     this._showSoftToast(`Server notice: ${message}`);
@@ -805,7 +892,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       duration: 2000,
       horizontalPosition: 'center',
       verticalPosition: 'top',
-      panelClass: ['soft-toast']
+      panelClass: ['soft-toast'],
     });
   }
 
@@ -815,7 +902,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   isProcessing(project: ProjectSummary): boolean {
     return project.status === 'processing';
   }
-
 
   /**
    * Get status display text

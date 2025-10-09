@@ -57,3 +57,15 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## AI tools
+### Claude
+Run below CLI to enable Claude
+```
+claude --dangerously-skip-permissions
+```
+### Codex
+Run below CLI to enable Codex
+```
+ codex --dangerously-bypass-approvals-and-sandbox
+```

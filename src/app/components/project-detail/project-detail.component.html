@@ -26,188 +26,108 @@
   <div *ngIf="!isLoading && !error && project" class="project-content">
     <!-- Header -->
     <div class="project-header">
-      <button mat-icon-button (click)="goBack()" matTooltip="Back to projects">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <div class="header-content">
+      <div class="header-main">
+        <button mat-icon-button class="back-button" (click)="goBack()" matTooltip="Back to projects">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
         <div class="header-title">
           <mat-icon class="content-type-icon">{{ getContentTypeIcon() }}</mat-icon>
           <h1>{{ project.name }}</h1>
         </div>
-        <div class="header-actions">
-          <button mat-raised-button color="accent" [matMenuTriggerFor]="exportMenu">
-            <mat-icon>download</mat-icon>
-            Export
-          </button>
-          <mat-menu #exportMenu="matMenu">
-            <button mat-menu-item (click)="exportAsMarkdown()">
-              <mat-icon>code</mat-icon>
-              <span>Export as Markdown</span>
-            </button>
-            <button mat-menu-item (click)="exportAsJSON()">
-              <mat-icon>data_object</mat-icon>
-              <span>Export as JSON</span>
-            </button>
-            <button mat-menu-item (click)="exportAsText()">
-              <mat-icon>text_snippet</mat-icon>
-              <span>Export as Plain Text</span>
-            </button>
-          </mat-menu>
-        </div>
-        <div class="header-meta">
-          <mat-chip-listbox aria-label="Project metadata">
-            <mat-chip-option [disableRipple]="true" [disabled]="true">
-              {{ getContentTypeLabel() }}
-            </mat-chip-option>
-            <mat-chip-option [disableRipple]="true" [disabled]="true">
-              Created: {{ formatDate(project.createdAt) }}
-            </mat-chip-option>
-            <mat-chip-option *ngIf="project.rewriteData" [disableRipple]="true" [disabled]="true" color="accent">
-              Has Rewrite
-            </mat-chip-option>
-          </mat-chip-listbox>
-        </div>
       </div>
     </div>
 
-    <!-- Input Source Card -->
-    <mat-card class="content-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>input</mat-icon>
-          Input Source
-        </mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="input-content">
-          <!-- URL Input (YouTube/Webpage) -->
-          <div *ngIf="isUrl()" class="url-input">
-            <p class="input-label">URL:</p>
-            <div class="input-value-container">
-              <code class="input-value">{{ getInputPreview() }}</code>
-              <button mat-raised-button color="primary"
-                      (click)="copyToClipboard(getInputPreview(), 'URL', 'url')"
-                      matTooltip="Copy URL"
-                      class="copy-button">
-                <mat-icon>content_copy</mat-icon>
-                {{ copyButtonStates.url() }}
-              </button>
+    <!-- Summary Result Card -->
+    <div class="summary-card-container" *ngIf="project.summaryData">
+      <div class="summary-card">
+        <div class="summary-header">
+          <div class="summary-title-section">
+            <h3>Summary</h3>
+            <div class="summary-badges">
+              <app-token-badge
+                *ngIf="project.summaryData.tokensUsed !== undefined && project.summaryData.tokensUsed !== null"
+                [tokensCount]="project.summaryData.tokensUsed"
+                [isEstimation]="false">
+              </app-token-badge>
+              <span class="badge date-badge">
+                Generated: {{ formatDate(project.summaryData.createdAt) }}
+              </span>
             </div>
           </div>
-
-          <!-- Text Input -->
-          <div *ngIf="isTextContent()" class="text-input">
-            <p class="input-label">Text Preview:</p>
-            <div class="input-value-container">
-              <p class="input-value">{{ getInputPreview() }}</p>
-              <button mat-raised-button color="primary"
-                      (click)="copyToClipboard(project.name, 'Text', 'url')"
-                      matTooltip="Copy text"
-                      class="copy-button">
-                <mat-icon>content_copy</mat-icon>
-                {{ copyButtonStates.url() }}
-              </button>
-            </div>
-          </div>
-
-          <!-- File Input (Image/Audio/Video) -->
-          <div *ngIf="isFileContent()" class="file-input">
-            <p class="input-label">File Name:</p>
-            <div class="input-value-container">
-              <span class="input-value">{{ project.name }}</span>
-            </div>
-          </div>
-
-          <div class="input-meta">
-            <small>Created: {{ formatDate(project.createdAt) }}</small>
+          <div class="summary-actions">
+            <button
+              mat-icon-button
+              class="export-icon-button"
+              matTooltip="Export summary"
+              (click)="exportSummaryContent()">
+              <mat-icon>download</mat-icon>
+            </button>
           </div>
         </div>
-      </mat-card-content>
-    </mat-card>
 
-    <!-- Summary Result Card -->
-    <mat-card class="content-card" *ngIf="project.summaryData">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>summarize</mat-icon>
-          Summary Result
-        </mat-card-title>
-        <div class="card-actions">
-          <button mat-raised-button color="primary"
-                  (click)="copyToClipboard(project.summaryData.content, 'Summary', 'summary')"
-                  matTooltip="Copy summary"
-                  class="copy-button">
+        <div class="summary-content">
+          <div class="summary-rich-text" [innerHTML]="project.summaryData.content"></div>
+        </div>
+
+        <div class="summary-footer">
+          <button
+            mat-raised-button
+            color="primary"
+            class="copy-button-footer"
+            (click)="copyToClipboard(project.summaryData.content, 'Summary', 'summary')"
+            matTooltip="Copy summary">
             <mat-icon>content_copy</mat-icon>
             {{ copyButtonStates.summary() }}
           </button>
         </div>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="summary-content">
-          <div class="summary-text" [innerHTML]="project.summaryData.content"></div>
-          <div class="summary-meta">
-            <app-token-badge
-              *ngIf="project.summaryData.tokensUsed"
-              [tokensCount]="project.summaryData.tokensUsed"
-              [isEstimation]="false">
-            </app-token-badge>
-            <span class="summary-date">
-              Generated: {{ formatDate(project.summaryData.createdAt) }}
-            </span>
+      </div>
+    </div>
+
+    <!-- Recreation Result Card -->
+    <div class="rewritten-summary-card-container" *ngIf="project.rewriteData">
+      <div class="rewritten-summary-card">
+        <div class="rewritten-summary-header">
+          <div class="rewritten-summary-title-section">
+            <mat-icon class="card-icon">article</mat-icon>
+            <h3>Recreation</h3>
+            <div class="rewritten-summary-badges">
+              <app-token-badge
+                *ngIf="project.rewriteData.tokensUsed !== undefined && project.rewriteData.tokensUsed !== null"
+                [tokensCount]="project.rewriteData.tokensUsed"
+                [isEstimation]="false">
+              </app-token-badge>
+              <span class="badge date-badge">
+                Generated: {{ formatDate(project.rewriteData.createdAt) }}
+              </span>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button
+              mat-icon-button
+              class="export-icon-button"
+              matTooltip="Export recreation"
+              (click)="exportRewriteContent()">
+              <mat-icon>download</mat-icon>
+            </button>
           </div>
         </div>
-      </mat-card-content>
-    </mat-card>
 
-    <!-- Rewrite Result Card -->
-    <mat-card class="content-card" *ngIf="project.rewriteData">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>edit_note</mat-icon>
-          Rewrite Result
-        </mat-card-title>
-        <div class="card-actions">
-          <button mat-raised-button color="primary"
-                  (click)="copyToClipboard(project.rewriteData.content, 'Rewrite', 'rewrite')"
-                  matTooltip="Copy rewrite"
-                  class="copy-button">
+        <div class="rewritten-summary-content">
+          <div class="summary-rich-text" [innerHTML]="project.rewriteData.content"></div>
+        </div>
+
+        <div class="rewritten-summary-footer">
+          <button
+            mat-raised-button
+            color="primary"
+            class="copy-button-footer"
+            (click)="copyToClipboard(project.rewriteData.content, 'Recreation', 'rewrite')"
+            matTooltip="Copy recreation">
             <mat-icon>content_copy</mat-icon>
             {{ copyButtonStates.rewrite() }}
           </button>
         </div>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="summary-content">
-          <div class="summary-text" [innerHTML]="project.rewriteData.content"></div>
-          <div class="summary-meta">
-            <app-token-badge
-              *ngIf="project.rewriteData.tokensUsed"
-              [tokensCount]="project.rewriteData.tokensUsed"
-              [isEstimation]="false">
-            </app-token-badge>
-            <span class="summary-date">
-              Generated: {{ formatDate(project.rewriteData.createdAt) }}
-            </span>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Regeneration Info -->
-    <mat-card class="info-card">
-      <mat-card-content>
-        <div class="info-content">
-          <mat-icon color="primary">info</mat-icon>
-          <div class="info-text">
-            <p><strong>Note:</strong> This is a read-only view of your project.</p>
-            <p>To regenerate or modify the summary, please visit the 
-              <a (click)="navigateToSummarisePage()" class="link-button">
-                original summarise page
-              </a>.
-            </p>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </div>
   </div>
 </div>

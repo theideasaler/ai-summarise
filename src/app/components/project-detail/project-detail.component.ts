@@ -2,13 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -25,12 +21,8 @@ import { TokenBadgeComponent } from '../shared/token-badge/token-badge.component
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
-    MatDividerModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatMenuModule,
-    MatSnackBarModule,
     TokenBadgeComponent,
   ],
   templateUrl: './project-detail.component.html',
@@ -44,8 +36,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   // Copy button states
   copyButtonStates = {
     summary: signal<string>('Copy'),
-    rewrite: signal<string>('Copy'),
-    url: signal<string>('Copy')
+    rewrite: signal<string>('Copy')
   };
 
   private destroy$ = new Subject<void>();
@@ -55,7 +46,6 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     private router: Router,
     private projectService: ProjectService,
     private logger: LoggerService,
-    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -197,14 +187,10 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     return contentType === 'image' || contentType === 'audio' || contentType === 'video';
   }
 
-  copyToClipboard(text: string, label: string = 'Content', buttonType?: 'summary' | 'rewrite' | 'url'): void {
+  copyToClipboard(text: string, label: string = 'Content', buttonType?: 'summary' | 'rewrite'): void {
     // Check for empty content
     if (!text) {
-      this.snackBar.open('No content to copy', 'Close', {
-        duration: 2000,
-        horizontalPosition: 'center',
-        verticalPosition: 'bottom',
-      });
+      this.logger.warn(`Attempted to copy empty content for ${label}`);
       return;
     }
 
@@ -215,20 +201,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(plainText).then(
         () => {
-          this.logger.log(`${label} copied to clipboard`);
-          this.snackBar.open(`${label} copied to clipboard`, 'Close', {
-            duration: 2000,
-            horizontalPosition: 'center',
-            verticalPosition: 'bottom',
-          });
-
-          // Update button text if buttonType is provided
-          if (buttonType && this.copyButtonStates[buttonType]) {
-            this.copyButtonStates[buttonType].set('Copied');
-            setTimeout(() => {
-              this.copyButtonStates[buttonType].set('Copy');
-            }, 2000);
-          }
+          this._handleCopySuccess(label, buttonType);
         },
         (err) => {
           this.logger.error('Failed to copy to clipboard:', err);
@@ -241,7 +214,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private _fallbackCopy(text: string, label: string, buttonType?: 'summary' | 'rewrite' | 'url'): void {
+  private _fallbackCopy(text: string, label: string, buttonType?: 'summary' | 'rewrite'): void {
     const textArea = document.createElement('textarea');
     textArea.value = text;
     textArea.style.position = 'fixed';
@@ -254,44 +227,26 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     try {
       const successful = document.execCommand('copy');
       if (successful) {
-        this.snackBar.open(`${label} copied to clipboard`, 'Close', {
-          duration: 2000,
-          horizontalPosition: 'center',
-          verticalPosition: 'bottom',
-        });
-
-        // Update button text if buttonType is provided
-        if (buttonType && this.copyButtonStates[buttonType]) {
-          this.copyButtonStates[buttonType].set('Copied');
-          setTimeout(() => {
-            this.copyButtonStates[buttonType].set('Copy');
-          }, 2000);
-        }
+        this._handleCopySuccess(label, buttonType);
       } else {
         throw new Error('Copy command failed');
       }
     } catch (err) {
       this.logger.error('Fallback copy failed:', err);
-      this.snackBar.open('Failed to copy to clipboard', 'Close', {
-        duration: 3000,
-        horizontalPosition: 'center',
-        verticalPosition: 'bottom',
-      });
     }
 
     document.body.removeChild(textArea);
   }
 
-  navigateToSummarisePage(): void {
-    if (!this.project) return;
-    
-    // Map content type to the correct route
-    let routeType = this.project.contentType;
-    if (routeType === 'webpage') {
-      routeType = 'webpage' as any;
+  private _handleCopySuccess(label: string, buttonType?: 'summary' | 'rewrite'): void {
+    this.logger.log(`${label} copied to clipboard`);
+
+    if (buttonType && this.copyButtonStates[buttonType]) {
+      this.copyButtonStates[buttonType].set('Copied');
+      setTimeout(() => {
+        this.copyButtonStates[buttonType].set('Copy');
+      }, 2000);
     }
-    
-    this.router.navigate(['/summarise', routeType]);
   }
 
   goBack(): void {
@@ -417,6 +372,48 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     
     this._downloadFile(text, `${this._sanitiseFilename(this.project.name)}.txt`, 'text/plain');
     this.logger.log('Project exported as Text');
+  }
+
+  exportSummaryContent(): void {
+    if (!this.project?.summaryData) return;
+
+    const summaryText = this._stripHtml(this.project.summaryData.content);
+    const tokens = this.project.summaryData.tokensUsed ?? 0;
+    const generated = this.formatDate(this.project.summaryData.createdAt);
+    const filename = `${this._sanitiseFilename(this.project.name)}-summary.md`;
+    const markdown = [
+      `# ${this.project.name} - Summary`,
+      '',
+      summaryText,
+      '',
+      '---',
+      `*Tokens used: ${tokens}*`,
+      `*Generated: ${generated}*`,
+    ].join('\n');
+
+    this._downloadFile(markdown, filename, 'text/markdown');
+    this.logger.log('Summary exported as Markdown');
+  }
+
+  exportRewriteContent(): void {
+    if (!this.project?.rewriteData) return;
+
+    const rewriteText = this._stripHtml(this.project.rewriteData.content);
+    const tokens = this.project.rewriteData.tokensUsed ?? 0;
+    const generated = this.formatDate(this.project.rewriteData.createdAt);
+    const filename = `${this._sanitiseFilename(this.project.name)}-recreation.md`;
+    const markdown = [
+      `# ${this.project.name} - Recreation`,
+      '',
+      rewriteText,
+      '',
+      '---',
+      `*Tokens used: ${tokens}*`,
+      `*Generated: ${generated}*`,
+    ].join('\n');
+
+    this._downloadFile(markdown, filename, 'text/markdown');
+    this.logger.log('Recreation exported as Markdown');
   }
   
   private _stripHtml(html: string): string {

@@ -209,17 +209,17 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
     const el = this.inputCardRef?.nativeElement;
     if (el && typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => {
-        this.bottomSpaceHeight.set(el.offsetHeight || 0);
+        this.bottomSpaceHeight.set((el.offsetHeight || 0) + 20);
       });
       this.resizeObserver.observe(el);
-      setTimeout(() => this.bottomSpaceHeight.set(el.offsetHeight || 0));
+      setTimeout(() => this.bottomSpaceHeight.set((el.offsetHeight || 0) + 20));
     }
   }
 
   @HostListener('window:resize')
   onWindowResize() {
     const el = this.inputCardRef?.nativeElement;
-    if (el) this.bottomSpaceHeight.set(el.offsetHeight || 0);
+    if (el) this.bottomSpaceHeight.set((el.offsetHeight || 0) + 20);
   }
 
   private _initializeFromQueryParams(): void {
@@ -321,7 +321,13 @@ export class WebpageSummariseComponent implements OnInit, OnDestroy, AfterViewIn
       .summariseWebpage(request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => this._handleSummarySuccess(response),
+        next: (response) => {
+          this._handleSummarySuccess(response);
+          // Refresh token info after submission
+          this.tokenService.fetchTokenInfo().then(() => {
+            this.logger.log('Tokens refreshed after webpage submission');
+          });
+        },
         error: (error) => this._handleApiError(error, 'Webpage analysis'),
       });
   }

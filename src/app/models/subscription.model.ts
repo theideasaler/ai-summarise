@@ -1,5 +1,5 @@
 export interface SubscriptionTier {
-  id: 'free' | 'pro' | 'premium';
+  id: 'free' | 'pro';
   name: string;
   price: number;
   tokens: number;
@@ -8,7 +8,7 @@ export interface SubscriptionTier {
 }
 
 export interface SubscriptionStatus {
-  tier: 'free' | 'pro' | 'premium';
+  tier: 'free' | 'pro';
   status: 'active' | 'inactive' | 'cancelled' | 'past_due';
   currentPeriodEnd?: string;
   cancelAtPeriodEnd?: boolean;
@@ -17,7 +17,7 @@ export interface SubscriptionStatus {
 }
 
 export interface CheckoutSessionRequest {
-  tier: 'pro' | 'premium';
+  tier: 'pro';
   success_url: string;
   cancel_url: string;
 }
@@ -26,18 +26,19 @@ export interface CheckoutSessionResponse {
   checkout_url: string;
   session_id: string;
   customer_id: string;
-  tier: 'pro' | 'premium';
+  tier: 'pro';
 }
 
 export interface PortalSessionResponse {
   portal_url: string;
   session_id: string;
   customer_id: string;
+  portal_enabled?: boolean;
 }
 
 export interface SubscriptionStatusResponse {
   user_id: string;
-  subscription_tier: 'free' | 'pro' | 'premium';
+  subscription_tier: 'free' | 'pro';
   subscription_status: 'active' | 'inactive' | 'cancelled' | 'past_due';
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
@@ -71,15 +72,14 @@ export interface StripeError {
   error: string;
   message: string;
   statusCode?: number;
+  errorCode?: string;
+  portalEnabled?: boolean;
 }
 
 export interface StripeConfig {
   publishableKey: string;
   products: {
     pro: {
-      priceId: string;
-    };
-    premium: {
       priceId: string;
     };
   };
