@@ -473,7 +473,7 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
   // ============================================================================
   private _buildYouTubeRequest(): YouTubeSummariseRequest {
     const request: YouTubeSummariseRequest = {
-      url: this.inputControl.value || '',
+      url: this._normalizeUrl(this.inputControl.value || '') || '',
     };
 
     const config = this._getActiveFineTuningConfig();
@@ -487,6 +487,11 @@ export class YoutubeComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     return request;
+  }
+
+  private _normalizeUrl(url: string): string {
+    const trimmed = url.trim();
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   }
 
   private _buildYouTubeRequestWithConfig(

@@ -3,8 +3,7 @@
   (click)="onBadgeClick($event)"
   [matTooltip]="tooltipText"
   matTooltipPosition="above"
-  [matTooltipDisabled]="isTouchDevice"
-  #tooltip="matTooltip"
+  [matTooltipDisabled]="isTouchDevice || (!isEstimation && !tooltipText)"
 >
   <span class="token-count">{{ tokenText }}</span>
   @if (isEstimation) {

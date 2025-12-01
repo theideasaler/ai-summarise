@@ -179,7 +179,6 @@
   mat-chip {
     font-size: 1.2rem;
     font-weight: 600;
-    padding: 0.5rem 1rem;
     border-radius: 12px;
   }
 }
@@ -237,6 +236,7 @@
     padding: 0.75rem 1.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    color: white;
 
     &:hover:not([disabled]) {
       transform: translateY(-2px);

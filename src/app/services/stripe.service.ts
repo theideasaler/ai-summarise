@@ -11,7 +11,6 @@ import {
   CheckoutSessionResponse,
   PortalSessionResponse,
   SubscriptionStatusResponse,
-  CancelSubscriptionResponse,
   SubscriptionStatus,
   StripeError,
   StripeConfig,
@@ -157,6 +156,34 @@ export class StripeService {
     return this.stripeConfig;
   }
 
+  private async _resolveRedirectOrigin(): Promise<string> {
+    await this._ensureInitialized();
+
+    const config = this.stripeConfig;
+    if (!config) {
+      throw new Error('Stripe configuration unavailable');
+    }
+
+    const origins = config.redirectOrigins ?? [];
+
+    if (typeof window !== 'undefined') {
+      const currentOrigin = window.location.origin;
+      if (origins.includes(currentOrigin)) {
+        return currentOrigin;
+      }
+    }
+
+    if (origins.length > 0) {
+      return origins[0];
+    }
+
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+
+    throw new Error('No redirect origin configured for Stripe flows');
+  }
+
   /**
    * Get authorization headers for API calls
    */
@@ -175,18 +202,16 @@ export class StripeService {
    * Create a checkout session for subscription
    */
   async createCheckoutSession(
-    tier: 'pro',
-    successUrl?: string,
-    cancelUrl?: string
+    tier: 'pro'
   ): Promise<CheckoutSessionResponse> {
     try {
       const headers = await this._getAuthHeaders();
-      const baseUrl = window.location.origin;
+      const origin = await this._resolveRedirectOrigin();
 
       const request: CheckoutSessionRequest = {
         tier,
-        success_url: successUrl || `${baseUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl || `${baseUrl}/plans`,
+        success_url: `${origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/plans`,
       };
 
       const response = await firstValueFrom(
@@ -249,12 +274,10 @@ export class StripeService {
    * Create checkout session and redirect
    */
   async createCheckoutAndRedirect(
-    tier: 'pro',
-    successUrl?: string,
-    cancelUrl?: string
+    tier: 'pro'
   ): Promise<void> {
     try {
-      const session = await this.createCheckoutSession(tier, successUrl, cancelUrl);
+      const session = await this.createCheckoutSession(tier);
       await this.redirectToCheckout(session.session_id);
     } catch (error) {
       this.logger.error('Failed to create checkout and redirect:', error);
@@ -306,16 +329,26 @@ export class StripeService {
   /**
    * Create a billing portal session
    */
-  async createPortalSession(returnUrl?: string): Promise<string> {
+  async createPortalSession(options: {
+    action?: 'manage-billing' | 'cancel' | 'reactivate';
+  } = {}): Promise<string> {
     try {
       const headers = await this._getAuthHeaders();
-      const baseUrl = window.location.origin;
+      const origin = await this._resolveRedirectOrigin();
+
+      const payload: { return_url: string; action?: string } = {
+        return_url: `${origin}/account`,
+      };
+
+      if (options.action) {
+        payload.action = options.action;
+      }
 
       const response = await firstValueFrom(
         this.http
           .post<PortalSessionResponse>(
             `${environment.apiUrl}/api/stripe/create-portal-session`,
-            { return_url: returnUrl || `${baseUrl}/account` },
+            payload,
             { headers }
           )
           .pipe(
@@ -336,46 +369,14 @@ export class StripeService {
   }
 
   /**
-   * Cancel subscription
-   */
-  async cancelSubscription(): Promise<CancelSubscriptionResponse> {
-    try {
-      const headers = await this._getAuthHeaders();
-
-      const response = await firstValueFrom(
-        this.http
-          .post<CancelSubscriptionResponse>(
-            `${environment.apiUrl}/api/stripe/cancel-subscription`,
-            {},
-            { headers }
-          )
-          .pipe(
-            retry(2),
-            tap(() => {
-              // Refresh subscription status after cancellation
-              this.getSubscriptionStatus();
-            }),
-            catchError(this._handleError.bind(this))
-          )
-      );
-
-      if (!response) {
-        throw new Error('No response from subscription cancellation');
-      }
-
-      return response;
-    } catch (error) {
-      this.logger.error('Failed to cancel subscription:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Redirect to billing portal
    */
-  async redirectToPortal(returnUrl?: string): Promise<void> {
+  async redirectToPortal(options: {
+    returnUrl?: string;
+    action?: 'manage-billing' | 'cancel' | 'reactivate';
+  } = {}): Promise<void> {
     try {
-      const portalUrl = await this.createPortalSession(returnUrl);
+      const portalUrl = await this.createPortalSession(options);
       window.location.href = portalUrl;
     } catch (error) {
       this.logger.error('Failed to redirect to portal:', error);

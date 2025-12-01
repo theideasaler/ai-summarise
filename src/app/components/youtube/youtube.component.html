@@ -26,7 +26,7 @@
   <!-- Summary Result Component -->
   <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
     [isRegenerating]="isRegenerating()" [isLoading]="isLoadingSummary()" (regenerate)="onRegenerateSummary()"
-    (clear)="onClearSummary()" (copy)="copySummary()">
+    (clear)="onClearSummary()" (copyRequested)="copySummary()">
   </app-summary-result>
 
   <!-- Rewrite Fine-Tuning Component -->
@@ -39,7 +39,7 @@
   <!-- Rewritten Summary Component -->
   <app-rewritten-summary *ngIf="rewrittenSummary() || isRewriteLoading()" [rewrittenData]="getRewrittenSummaryData()"
     [isRewriting]="isRegeneratingRewrite()" [isLoading]="isRewriteLoading() && !rewrittenSummary()"
-    (rewriteAgain)="onRewriteAgain()" (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+    (rewriteAgain)="onRewriteAgain()" (clear)="onClearRewrittenSummary()" (copyRequested)="copyRewrittenSummary()">
   </app-rewritten-summary>
 
   <!-- Multiline Input Component (for video fine-tuning) -->

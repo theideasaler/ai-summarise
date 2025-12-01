@@ -82,7 +82,7 @@
           <div class="info-row" *ngIf="status.cancelAtPeriodEnd">
             <span class="info-label warning-text">
               <mat-icon>warning</mat-icon>
-              Your subscription is scheduled to cancel at the end of the current period
+              Your subscription is scheduled to cancel at the end of the current period. Reactivate in the Stripe billing portal before this date to keep access.
             </span>
           </div>
 
@@ -106,12 +106,12 @@
               mat-button
               color="warn"
               (click)="cancelSubscription()"
-              [disabled]="isLoadingCancel"
+              [disabled]="isLoadingPortal"
               *ngIf="status.status === 'active' && !status.cancelAtPeriodEnd">
-              <mat-spinner diameter="20" *ngIf="isLoadingCancel"></mat-spinner>
-              <span *ngIf="!isLoadingCancel">
+              <mat-spinner diameter="20" *ngIf="isLoadingPortal"></mat-spinner>
+              <span *ngIf="!isLoadingPortal">
                 <mat-icon>cancel</mat-icon>
-                Cancel Subscription
+                Cancel in Stripe Portal
               </span>
             </button>
 
@@ -124,7 +124,7 @@
               <mat-spinner diameter="20" *ngIf="isLoadingPortal"></mat-spinner>
               <span *ngIf="!isLoadingPortal">
                 <mat-icon>restart_alt</mat-icon>
-                Reactivate Subscription
+                Reactivate in Stripe Portal
               </span>
             </button>
           </div>

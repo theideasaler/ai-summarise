@@ -9,7 +9,7 @@ export interface SubscriptionTier {
 
 export interface SubscriptionStatus {
   tier: 'free' | 'pro';
-  status: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  status: 'active' | 'inactive' | 'canceled' | 'past_due';
   currentPeriodEnd?: string;
   cancelAtPeriodEnd?: boolean;
   stripeCustomerId?: string;
@@ -34,12 +34,13 @@ export interface PortalSessionResponse {
   session_id: string;
   customer_id: string;
   portal_enabled?: boolean;
+  action?: string;
 }
 
 export interface SubscriptionStatusResponse {
   user_id: string;
   subscription_tier: 'free' | 'pro';
-  subscription_status: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  subscription_status: 'active' | 'inactive' | 'canceled' | 'past_due';
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   subscription_details?: {
@@ -62,12 +63,6 @@ export interface SubscriptionStatusResponse {
   last_updated: string;
 }
 
-export interface CancelSubscriptionResponse {
-  success: boolean;
-  message: string;
-  subscriptionStatus?: string;
-}
-
 export interface StripeError {
   error: string;
   message: string;
@@ -83,4 +78,5 @@ export interface StripeConfig {
       priceId: string;
     };
   };
+  redirectOrigins?: string[];
 }
