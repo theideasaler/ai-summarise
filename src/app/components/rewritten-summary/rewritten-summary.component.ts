@@ -51,7 +51,7 @@ export class RewrittenSummaryComponent {
 
   @Output() rewriteAgain = new EventEmitter<void>();
   @Output() clear = new EventEmitter<void>();
-  @Output() copy = new EventEmitter<void>();
+  @Output() copyRequested = new EventEmitter<void>();
 
   copyButtonText = signal<string>('Copy');
 
@@ -64,7 +64,7 @@ export class RewrittenSummaryComponent {
   }
 
   onCopy() {
-    this.copy.emit();
+    this.copyRequested.emit();
     this.copyButtonText.set('Copied');
     // Reset button text after 2 seconds
     setTimeout(() => {

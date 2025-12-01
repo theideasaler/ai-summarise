@@ -3,7 +3,7 @@
   <!-- Summary Result (match YouTube: show during loading) -->
   <app-summary-result *ngIf="summaryResult() || isLoadingSummary()" [summaryData]="summaryResult()"
     [isLoading]="isLoadingSummary()" [isRegenerating]="isRegenerating()" (regenerate)="onRegenerateSummary()"
-    (clear)="onClearSummary()" (copy)="copySummary()">
+    (clear)="onClearSummary()" (copyRequested)="copySummary()">
   </app-summary-result>
 
   <!-- Rewrite Action Bar -->
@@ -18,7 +18,7 @@
   <div class="rewritten-summary-container" *ngIf="rewrittenSummary() || isRewriteLoading()">
     <app-rewritten-summary [rewrittenData]="getRewrittenSummaryData()" [isRewriting]="isRegeneratingRewrite()"
       [isLoading]="isRewriteLoading() && !rewrittenSummary()" (rewriteAgain)="onRewriteAgain()"
-      (clear)="onClearRewrittenSummary()" (copy)="copyRewrittenSummary()">
+      (clear)="onClearRewrittenSummary()" (copyRequested)="copyRewrittenSummary()">
     </app-rewritten-summary>
   </div>
 

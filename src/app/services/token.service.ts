@@ -4,6 +4,7 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { LoggerService } from './logger.service';
+import { StripeService } from './stripe.service';
 
 export interface TokenInfo {
   monthlyLimit: number;
@@ -42,16 +43,37 @@ export class TokenService {
   remainingTokens = signal<number | null>(null);
   subscriptionTier = signal<'free' | 'pro'>('free');
 
+  private lastKnownTier: 'free' | 'pro' | null = null;
+
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private stripeService: StripeService
   ) {
     // Subscribe to token info changes and update signals
     this.tokenInfo$.subscribe((tokenInfo) => {
       if (tokenInfo) {
         this.remainingTokens.set(tokenInfo.remainingTokens);
         this.subscriptionTier.set(tokenInfo.subscriptionTier);
+        this.lastKnownTier = tokenInfo.subscriptionTier;
+      }
+    });
+
+    this.stripeService.subscriptionStatus$.subscribe((status) => {
+      if (!status) {
+        return;
+      }
+
+      if (!this.lastKnownTier) {
+        this.lastKnownTier = status.tier;
+        return;
+      }
+
+      if (status.tier !== this.lastKnownTier) {
+        this.lastKnownTier = status.tier;
+        this.logger.log('TokenService: detected subscription tier change to', status.tier);
+        void this.fetchTokenInfo();
       }
     });
   }
@@ -162,6 +184,7 @@ export class TokenService {
     this._tokenInfo.next(null);
     this.remainingTokens.set(null);
     this.subscriptionTier.set('free');
+    this.lastKnownTier = null;
     this._isInitialized = false;
     this._initializationPromise = null;
     this._lastFetchTime = 0;

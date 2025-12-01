@@ -42,7 +42,9 @@ iframe.youtube-player {
 }
 
 /* Prevent iOS Safari zoom on input focus */
-input, textarea, select {
+input,
+textarea,
+select {
   font-size: 1.6rem !important; /* 16px */
 }
 
@@ -52,14 +54,48 @@ input, textarea, select {
 }
 
 /* Typography scale for better SEO and readability */
-h1 { font-size: 3.2rem; line-height: 1.2; } /* 32px */
-h2 { font-size: 2.4rem; line-height: 1.3; } /* 24px */
-h3 { font-size: 2.0rem; line-height: 1.4; } /* 20px */
-h4 { font-size: 1.8rem; line-height: 1.4; } /* 18px */
-h5 { font-size: 1.6rem; line-height: 1.5; } /* 16px */
-h6 { font-size: 1.6rem; line-height: 1.5; } /* 16px */
-p, span, div { font-size: 1.6rem; line-height: 1.6; } /* 16px */
-small { font-size: 1.4rem; line-height: 1.4; } /* 14px - only for truly small text */
+h1 {
+  font-size: 3.2rem;
+  line-height: 1.2;
+} /* 32px */
+h2 {
+  font-size: 2.4rem;
+  line-height: 1.3;
+} /* 24px */
+h3 {
+  font-size: 2rem;
+  line-height: 1.4;
+} /* 20px */
+h4 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+} /* 18px */
+h5 {
+  font-size: 1.6rem;
+  line-height: 1.5;
+} /* 16px */
+h6 {
+  font-size: 1.6rem;
+  line-height: 1.5;
+} /* 16px */
+p,
+span,
+div {
+  font-size: 1.6rem;
+  line-height: 1.6;
+} /* 16px */
+small {
+  font-size: 1.4rem;
+  line-height: 1.4;
+} /* 14px - only for truly small text */
+
+button {
+  border-radius: 12px;
+}
+
+.mdc-button {
+  border-radius: 12px !important;
+}
 
 /* Global tooltip styling - consistent with FPS tooltip */
 ::ng-deep .mat-mdc-tooltip {
@@ -151,6 +187,22 @@ small { font-size: 1.4rem; line-height: 1.4; } /* 14px - only for truly small te
 .cdk-overlay-pane.mat-mdc-select-panel {
   z-index: 1203 !important;
 }
-.mdc-dialog--open .mat-mdc-dialog-surface, .mdc-dialog--closing .mat-mdc-dialog-surface {
+.mdc-dialog--open .mat-mdc-dialog-surface,
+.mdc-dialog--closing .mat-mdc-dialog-surface {
   border-radius: 16px;
+}
+.mat-mdc-button .mdc-button__label,
+.mat-mdc-button .mat-icon,
+.mat-mdc-unelevated-button .mdc-button__label,
+.mat-mdc-unelevated-button .mat-icon,
+.mat-mdc-raised-button .mdc-button__label,
+.mat-mdc-raised-button .mat-icon,
+.mat-mdc-outlined-button .mdc-button__label,
+.mat-mdc-outlined-button .mat-icon {
+  display: flex;
+}
+
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title {
+  margin: 16px 0;
 }

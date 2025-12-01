@@ -58,6 +58,11 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
 
+## Stripe Redirect Configuration
+
+- The frontend now derives Stripe redirect URLs from backend configuration. Ensure `STRIPE_ALLOWED_REDIRECTS` includes the app origin used for deployments.
+- Local development continues to work via `http://localhost:4200` when the backend environment is set to non-production.
+
 ## AI tools
 ### Claude
 Run below CLI to enable Claude

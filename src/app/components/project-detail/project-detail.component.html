@@ -25,7 +25,7 @@
   <!-- Project Content -->
   <div *ngIf="!isLoading && !error && project" class="project-content">
     <!-- Header -->
-    <div class="project-header">
+    <div class="project-header" [ngClass]="getHeaderClass()">
       <div class="header-main">
         <button mat-icon-button class="back-button" (click)="goBack()" matTooltip="Back to projects">
           <mat-icon>arrow_back</mat-icon>

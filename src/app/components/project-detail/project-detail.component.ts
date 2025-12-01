@@ -136,6 +136,14 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  getHeaderClass(): string {
+    if (!this.project?.contentType) {
+      return 'content-type-default';
+    }
+
+    return `content-type-${this.project.contentType}`;
+  }
+
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString('en-GB', {
       year: 'numeric',

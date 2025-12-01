@@ -9,13 +9,17 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { Observable, Subject, combineLatest } from 'rxjs';
+import { Observable, Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { StripeService } from '../../services/stripe.service';
 import { TokenService, TokenInfo } from '../../services/token.service';
 import { LoggerService } from '../../services/logger.service';
 import { SubscriptionStatus } from '../../models/subscription.model';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-account',
@@ -42,7 +46,6 @@ export class AccountComponent implements OnInit, OnDestroy {
   tokenInfo$: Observable<TokenInfo | null>;
 
   isLoadingPortal = false;
-  isLoadingCancel = false;
   isLoadingStatus = false;
 
   constructor(
@@ -81,7 +84,7 @@ export class AccountComponent implements OnInit, OnDestroy {
   async openBillingPortal(): Promise<void> {
     this.isLoadingPortal = true;
     try {
-      await this.stripeService.redirectToPortal();
+      await this.stripeService.redirectToPortal({ action: 'manage-billing' });
     } catch (error: any) {
       this.logger.error('Failed to open billing portal:', error);
       this.snackBar.open(
@@ -101,31 +104,18 @@ export class AccountComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.isLoadingCancel = true;
+    this.isLoadingPortal = true;
     try {
-      const result = await this.stripeService.cancelSubscription();
-
-      if (result.success) {
-        this.snackBar.open(
-          'Your subscription will be cancelled at the end of the current billing period',
-          'OK',
-          { duration: 7000 }
-        );
-
-        // Refresh subscription status
-        await this._loadSubscriptionStatus();
-      } else {
-        throw new Error(result.message || 'Failed to cancel subscription');
-      }
+      await this.stripeService.redirectToPortal({ action: 'cancel' });
     } catch (error: any) {
-      this.logger.error('Failed to cancel subscription:', error);
+      this.logger.error('Failed to cancel subscription via portal:', error);
       this.snackBar.open(
-        error.message || 'Failed to cancel subscription',
+        error.message || 'We could not open the Stripe billing portal. Please try again.',
         'OK',
         { duration: 5000 }
       );
     } finally {
-      this.isLoadingCancel = false;
+      this.isLoadingPortal = false;
     }
   }
 
@@ -133,16 +123,19 @@ export class AccountComponent implements OnInit, OnDestroy {
     this.isLoadingPortal = true;
     try {
       // Redirect to billing portal to reactivate
-      await this.stripeService.redirectToPortal();
+      await this.stripeService.redirectToPortal({ action: 'reactivate' });
     } catch (error: any) {
-      this.logger.error('Failed to reactivate subscription:', error);
-      this.snackBar.open(
-        'Please use the billing portal to reactivate your subscription',
-        'Open Portal',
-        { duration: 7000 }
-      ).onAction().subscribe(() => {
-        this.openBillingPortal();
-      });
+      this.logger.error('Failed to reactivate subscription via portal:', error);
+      this.snackBar
+        .open(
+          'We could not open the Stripe billing portal. Please try again.',
+          'Retry',
+          { duration: 7000 }
+        )
+        .onAction()
+        .subscribe(() => {
+          this.openBillingPortal();
+        });
     } finally {
       this.isLoadingPortal = false;
     }
@@ -181,7 +174,7 @@ export class AccountComponent implements OnInit, OnDestroy {
     switch (status) {
       case 'active':
         return 'primary';
-      case 'cancelled':
+      case 'canceled':
         return 'warn';
       case 'past_due':
         return 'warn';
@@ -205,11 +198,24 @@ export class AccountComponent implements OnInit, OnDestroy {
   }
 
   private async _showCancelConfirmation(): Promise<boolean> {
-    return new Promise((resolve) => {
-      const result = confirm(
-        'Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.'
-      );
-      resolve(result);
+    const dialogRef = this.dialog.open<
+      ConfirmDialogComponent,
+      ConfirmDialogData,
+      boolean
+    >(ConfirmDialogComponent, {
+      width: '420px',
+      disableClose: true,
+      data: {
+        title: 'Cancel Subscription',
+        message:
+          'Are you sure you want to cancel? You will be redirected to Stripe’s billing portal to finish the cancellation, and you will keep access until the end of this billing period.',
+        confirmText: 'Open Stripe Portal',
+        cancelText: 'Stay Subscribed',
+        type: 'warning',
+      },
     });
+
+    const result = await firstValueFrom(dialogRef.afterClosed());
+    return !!result;
   }
 }

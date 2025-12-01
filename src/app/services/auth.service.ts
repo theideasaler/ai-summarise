@@ -21,7 +21,7 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   subscriptionTier: 'free' | 'pro';
-  subscriptionStatus?: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  subscriptionStatus?: 'active' | 'inactive' | 'canceled' | 'past_due';
   tokenBalance: number;
   dailyTokensUsed: number;
   lastTokenReset?: string;

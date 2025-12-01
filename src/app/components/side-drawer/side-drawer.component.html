@@ -47,7 +47,7 @@
             <div class="nav-text" *ngIf="shouldShowText$ | async">
               <span class="nav-label">Account</span>
               <span class="nav-description token-count" *ngIf="(remainingTokens$ | async) !== null && (remainingTokens$ | async) !== undefined">
-                {{ (remainingTokens$ | async) | number }} tokens left
+                {{ (remainingTokens$ | async) | number }} remaining
               </span>
               <span class="nav-description" *ngIf="(remainingTokens$ | async) === null || (remainingTokens$ | async) === undefined">
                 <ng-container *ngIf="currentUser$ | async; else notAuthenticated">

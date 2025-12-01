@@ -21,7 +21,7 @@ export class TokenBadgeComponent implements OnInit {
   private readonly platform = inject(Platform);
   protected isTouchDevice = false;
 
-  private readonly defaultTooltipText =
+  private readonly estimatedTooltipText =
     'This is an estimated token count. Actual token usage may vary depending on content complexity and processing requirements.';
 
   ngOnInit(): void {
@@ -49,9 +49,11 @@ export class TokenBadgeComponent implements OnInit {
   }
 
   get tooltipText(): string {
-    return this.tooltip && this.tooltip.trim().length > 0
-      ? this.tooltip
-      : this.defaultTooltipText;
+    if (this.tooltip && this.tooltip.trim().length > 0) {
+      return this.tooltip;
+    }
+
+    return this.isEstimation ? this.estimatedTooltipText : '';
   }
 
   onBadgeClick(event: Event): void {
